@@ -69,3 +69,24 @@ p <- ggplot(gapminder, aes(gdpPercap, lifeExp, frame = year)) +
   theme(legend.position="none")
 
 gganimate(p)
+
+## animating other dimension
+p <- ggplot(gapminder, aes(gdpPercap, lifeExp, size = pop,
+                            frame = continent)) + # <- look: the continent is in the frame
+  geom_point() +
+  scale_x_log10()
+
+gganimate(p)
+
+## Beware: stats put on the animation should be grouped by the "frame" unit
+p <- ggplot(gapminder, aes(gdpPercap, lifeExp, size = pop, frame = year)) +
+  geom_point() +
+  geom_smooth(aes(group = year), method = "lm", show.legend = FALSE) +
+  facet_wrap(~continent, scales = "free") +
+  scale_x_log10() 
+
+gganimate(p)
+
+# faster
+gganimate(p, interval=.2)
+
