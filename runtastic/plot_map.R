@@ -14,10 +14,13 @@ lat_min <- min(data$lat)
 lat_max <- max(data$lat)
 
 # Create plot
-ggplot(data) +
+p <- ggplot(data) +
   geom_path(aes(lon, lat, group = id),
             alpha = 0.3, size = 0.3, lineend = "round") +
   theme_void()
 
+p
+
 # Save plot
-ggsave("plots/map001.png", p, width = 20, height = 15, units = "cm", dpi = 600)
+ggsave("./map001.png", p, width = 30, height = 15, units = "cm", dpi = 600)
+
