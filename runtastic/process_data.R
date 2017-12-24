@@ -1,5 +1,5 @@
 # set workdir
-setwd("./runtastic/")
+# setwd("./runtastic/")
 
 # Load packages ----
 library(sp)

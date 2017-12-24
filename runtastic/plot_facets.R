@@ -9,7 +9,7 @@ library(tidyverse)
 data <- readRDS("./data/gpx_processed.rds")
 
 # Create plot
-p <- ggplot() +
+ggplot() +
   geom_path(aes(lon, lat, group = id), data, size = 0.35, lineend = "round") +
   facet_wrap(~id, scales = "free", labeller = function(...){return("")}) +
   theme_void() +

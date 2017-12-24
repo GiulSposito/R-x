@@ -1,15 +1,9 @@
-function Sleep(){return("waked")}; // Does nothing.
-function goToSleep() {setTimeout(Sleep, Math.random() * 10000)}; // Go to sleep for n milliseconds.
-
-
 $('body').html('');
 $.each(index_data,function(i, value)
 {
     var id = value[0],
         url = 'https://' + app_config.domain+user.run_sessions_path+value[0] + '.gpx',
         filename = 'RUNTASTIC-' + value[1] + '-' + value[0] + '.gpx';
-	
-	goToSleep();
 
     $.ajax({
         url: 'https://' + app_config.domain + user.run_sessions_path + id + '.gpx',
