@@ -4,15 +4,30 @@
 library(tidyverse)
 library(ggplot2)
 library(gganimate)
+library(lubridate)
 
 data <- readRDS("./data/gpx_processed.rds")
 
 data %>%
-  filter(id %in% 1) %>%
-  rename( data.time = time ) %>%
-  arrange( data.time ) %>% ggplot() +
-  geom_path(aes(lon, lat, group=id, frame=data.time, cumulative=T),
-            alpha = 0.3, size = 0.3, lineend = "round") +
-  theme_void() ->p
+  filter( year(time)==2017 ) %>%
+  mutate( data.time = floor_date(time, unit="3 minutes") ) %>%
+  group_by(id, data.time) %>%
+  summarise( lat = min(lat), 
+             lon = min(lon), 
+             ele = min(ele),
+             dist_to_prev = min(dist_to_prev), 
+             cumdist = min(cumdist),
+             cumtime = min(cumtime) ) %>% 
+  ungroup() %>%
+  mutate( id = as.factor(id) ) %>% 
+  arrange( id, data.time ) %>% ggplot() +
+  geom_path(aes(lon, lat, group=id, color=id, frame=data.time, cumulative=T),
+            alpha = 0.3, size = 0.7, lineend = "round") +
+  coord_fixed() +
+  theme_void() +
+  theme( legend.position = "none" ) -> p
 
-gganimate(p,interval=0.05)
+gganimate(p, interval=0.005, ani.width=800, ani.height=400)
+
+?gganimate
+
