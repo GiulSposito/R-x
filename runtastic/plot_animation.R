@@ -29,5 +29,16 @@ data %>%
 
 gganimate(p, interval=0.005, ani.width=800, ani.height=400)
 
-?gganimate
 
+#### tentando arredondar sem sumir com os pontos
+data %>%
+  filter( year(time)==2017 ) %>%
+  mutate( data.time = floor_date(time, unit="5 minutes") ) %>%
+  mutate( id = as.factor(id) ) %>% 
+  arrange( id, data.time ) %>%
+  ggplot() +
+  geom_path(aes(lon, lat, group=id, color=id, frame=data.time, cumulative=T),
+            alpha = 0.3, size = 0.7, lineend = "round") +
+  coord_fixed() +
+  theme_void() +
+  theme( legend.position = "none" ) -> p
