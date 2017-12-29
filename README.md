@@ -8,3 +8,4 @@ Playing with R in some random experiments
  - **gganimate**: Playing with [gganimate package](https://github.com/dgrtwo/gganimate) to generate animated plot with ggplot2.
  - **GetHFData**: Trying to use and make some available of the package to import High Frequence Data of Brazilian's Stock Exchange transactions.
  - **runtastic**: Processing and ploting GPX files from [Runtastic](http://www.runtastic.com), based in the [Marcus Volz](https://twitter.com/mgvolz)'s work with [Strava](https://github.com/marcusvolz/strava)
+  - **plotly3d**: Trying to plot my #MTB rides in a 3D interactive space.
