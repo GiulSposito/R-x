@@ -28,7 +28,7 @@ View(ids)
 ## p
 data %>%
   filter( ele >= 550, ele <= 1200,
-          (id %in% ids$id[1:10])) %>%
+          (id %in% ids$id[1:20])) %>%
   mutate( id = as.factor(id),
           lon = -lon,
           ele.smth = despike(ele, reference = "median",n=0.2,k=101) ) %>%
