@@ -1,0 +1,45 @@
+---
+title: "My MTB Runtastic Rides in 3D"
+author: "Giuliano Sposito"
+date: "December 30th, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(ggplot2)
+library(oce)
+library(tidyverse)
+library(plotly)
+library(lubridate)
+```
+
+```{r plot, fig.align='center', fig.width=11, fig.height=7, message=FALSE, warning=FALSE, echo=FALSE}
+
+# Read in pre-processed data
+data <- readRDS("./data/gpx_processed.rds")
+
+data %>%
+  filter( ele >= 550, ele <= 1200 ) %>%
+  # mutate( date.time = floor_date(time, unit="30 seconds")) %>%
+  # group_by( id, date.time ) %>%
+  # summarise( lat = mean(lat), lon = mean(lon), ele = mean(ele) ) %>%
+  ungroup() %>%
+  mutate( id = as.factor(id),
+          lon = -lon,
+          ele.smth = despike(ele, reference = "median",n=0.2,k=101),
+          dist = round(cumdist,2),
+          dur  = round(cumtime/(60*60),2)
+          ) %>% 
+  plot_ly(x = ~lat, y = ~lon, z = ~ele.smth, color=~id,
+          text = ~paste("Time: ",dur, "h<br>Dist: ", dist,"km")) %>%
+  add_paths() %>%
+  layout(
+    showlegend = FALSE,
+    scene = list(xaxis = list(title = 'lat'),
+                      yaxis = list(title = 'lon'),
+                      zaxis = list(title = 'ele'),
+                      aspectratio = list(x=1, y=2, z=0.2)))
+```
+
