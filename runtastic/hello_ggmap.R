@@ -17,10 +17,15 @@ data <- readRDS("./data/gpx_processed.rds")
 bbox <- make_bbox(lon = data$lon, lat=data$lat, f=.1)
 bbox
 
-sq_map <- get_map( location=bbox, maptype = "hybrid", source="google")
+sq_map <- get_map( location=bbox, maptype = "terrain", source="google")
 ret_map <- get_googlemap(center=c(-46.738256,-22.696416),
-                         zoom=11, scale=1, maptype="hybrid", size=c(640,640))
+                         zoom=12, scale=4,
+                         maptype="terrain",
+                         size=c(1280,1280),
+                         sensor=F)
 ggmap(ret_map)
+
+
 
 data %>%
   #filter( year(time)==2017 ) %>%
