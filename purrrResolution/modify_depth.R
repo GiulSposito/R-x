@@ -39,3 +39,12 @@ FromListSimple(hd)
 # modify apply a FUN to the 2nd level (seasson) of the list
 hd.dt <- modify_depth(hd, 2, as.data.frame)
 hd.dt
+
+# change the temperatures in the original to Celsius
+FtoC <- function(Fa){
+  return((Fa - 32)*5/9)
+}
+
+library(dplyr)
+toCelcius <- . %>% mutate(Temp=FtoC(Temp))
+hd.dt.c <- modify_depth(hd.dt, 2, toCelcius)
