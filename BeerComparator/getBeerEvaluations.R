@@ -33,7 +33,7 @@ scrapBeerPage <- function(base.url) {
     rename(link.avaliacao=value) -> beers.eval_link
   
   html_doc %>% 
-    html_nodes(".main p:first-child img") %>%
+    html_nodes(".main a:first-child img") %>% 
     html_attr("src") %>%
     str_replace("\\?.*","") %>%
     as.tibble() %>% 
@@ -46,8 +46,9 @@ scrapBeerPage <- function(base.url) {
     unlist() %>% str_split("\n") %>%
     map(function(texts){
       str_replace(texts, ".+: ", "") %>%
-      str_replace(.,"\\.+$","") 
-    }) %>% 
+        str_replace(.,"\\.+$","") %>%
+        head(9) # somente sete atributos
+    }) %>%
     unlist() %>% as.vector() %>%
     matrix(ncol=9, byrow = T) %>%
     as.tibble() %>%
@@ -84,3 +85,4 @@ pages %>%
   map_df(scrapBeerPage) -> beers
 
 View(beers)
+
