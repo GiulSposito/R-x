@@ -39,11 +39,10 @@ scrapBeerPage <- function(base.url) {
     as.tibble() %>% 
     rename(image=value) -> beers.image
   
-  
   html_doc %>%
     html_nodes(".main p") %>%
     html_text() %>%
-    map( ~Filter(function(x) str_count(x,"País")>0,.) ) %>%
+    map( ~Filter(function(x) str_count(x,"País: ")>0,.) ) %>% 
     unlist() %>% str_split("\n") %>%
     map(function(texts){
       str_replace(texts, ".+: ", "") %>%
@@ -85,4 +84,3 @@ pages %>%
   map_df(scrapBeerPage) -> beers
 
 View(beers)
-
