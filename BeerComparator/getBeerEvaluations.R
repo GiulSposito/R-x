@@ -71,9 +71,15 @@ scrapBeerPage <- function(base.url) {
   #              "avaliacao","preco","volume")) -> beers.eval
   
   html_doc %>%
-    html_nodes(".main p:last-of-type a") %>%
-    html_attr("href") %>%
-    as.tibble() %>%
+    html_nodes(".main p:last-of-type") %>% 
+    map(function(x){
+      link <- html_nodes(x,"a:first-child")
+    }) %>%
+    map(function(x){
+      if (length(x)>0) { html_attr(x,"href") }
+        else {return(NA)}
+    }) %>% unlist() %>%
+    as.tibble() %>% 
     rename(url=value) -> beers.url
   
   html_doc %>%
@@ -92,8 +98,7 @@ pages %>%
   paste0(base.url, "page/", .) %>%
   map_df(scrapBeerPage) -> beers
 
-base.url <- "https://cervanossa.wordpress.com/page/4"
-
 View(beers)
 
-base.url <- "https://cervanossa.wordpress.com/page/9"
+
+base.url <- "https://cervanossa.wordpress.com/page/10"
