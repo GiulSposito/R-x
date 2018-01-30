@@ -6,7 +6,7 @@ library(lubridate)
 library(purrr)
 
 base.url <- "https://cervanossa.wordpress.com/"
-pages <- 1:50
+pages <- 1:203
 
 scrapBeerPage <- function(base.url) {
 
@@ -56,20 +56,6 @@ scrapBeerPage <- function(base.url) {
                "cor","sabor","malte",
                "avaliacao","preco","volume")) -> beers.eval
   
-  # html_doc %>%
-  #   html_nodes(".main p:first-child") %>%
-  #   html_text() %>% str_split("\n") %>% str()
-  #   map(function(texts){
-  #     str_replace(texts, ".+: ", "") %>%
-  #       str_replace(.,"\\.+$","") 
-  #   }) %>% 
-  #   unlist() %>% as.vector() %>%
-  #   matrix(ncol=9, byrow = T) %>%
-  #   as.tibble() %>%
-  #   setNames(c("pais","tipo","alcool",
-  #              "cor","sabor","malte",
-  #              "avaliacao","preco","volume")) -> beers.eval
-  
   html_doc %>%
     html_nodes(".main p:last-of-type") %>% 
     map(function(x){
@@ -100,5 +86,3 @@ pages %>%
 
 View(beers)
 
-
-base.url <- "https://cervanossa.wordpress.com/page/10"
