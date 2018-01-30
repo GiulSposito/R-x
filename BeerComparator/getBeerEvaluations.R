@@ -18,13 +18,15 @@ scrapBeerPage <- function(base.url) {
     html_nodes("div .post") %>%
     html_nodes("h2 a:first-child") %>%
     html_text() %>%
+    str_replace("\u00A0"," ") %>%
+    str_replace("\u2011","_") %>%
     as.tibble() %>%
     rename(nome.completo=value) %>%
-    mutate( 
-      cervejaria = str_split(nome.completo," - ", simplify = T)[,1],
-      cerveja = str_split(nome.completo," - ", simplify = T)[,2] 
+    mutate(
+      cervejaria = str_split(nome.completo, " . ", simplify = T)[,1],
+      cerveja = str_split(nome.completo," . ", simplify = T)[,2]
     ) -> beers.name
-  
+
   html_doc %>% 
     html_nodes("div .post") %>%
     html_nodes("h2 a:first-child") %>%
@@ -86,7 +88,19 @@ scrapBeerPage <- function(base.url) {
 
 pages %>%
   paste0(base.url, "page/", .) %>%
-  map_df(scrapBeerPage) -> beers
+  map_df(possibly(scrapBeerPage,NULL)) -> beers
 
-View(beers)
+beers %>%
+  mutate(
+    cervejaria = as.factor(cervejaria),
+    pais = as.factor(pais),
+    tipo = as.factor(tipo),
+    avaliacao = as.integer(avaliacao),
+    alcool = as.numeric(str_replace(str_replace(alcool,"%",""),",","."))/100   
+  ) %>%
+  filter( !is.na(alcool) ) -> beers
+
+saveRDS(beers,"./BeerComparator/data/beers.rds")
+beers <- readRDS("./BeerComparator/data/raw_beers.rds")
+
 
