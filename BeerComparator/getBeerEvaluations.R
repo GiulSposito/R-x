@@ -33,8 +33,12 @@ scrapBeerPage <- function(base.url) {
     rename(link.avaliacao=value) -> beers.eval_link
   
   html_doc %>% 
-    html_nodes(".main a:first-child img") %>% 
-    html_attr("src") %>%
+    html_nodes(".main") %>% 
+    map(function(x){
+      html_node(x,"img") %>%
+        html_attr("src") %>%
+        head(1)
+    }) %>%
     str_replace("\\?.*","") %>%
     as.tibble() %>% 
     rename(image=value) -> beers.image
