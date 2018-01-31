@@ -1,17 +1,23 @@
 library(tidyverse)
 library(tidytext)
+library(ptstem)
 
 beers <- readRDS("./BeerComparator/data/beers.rds")
 
-pt_stopwords <- read_table("./BeerComparator/data/stopwords.txt", 
+pt_stopwords <- read_table("./BeerComparator/stopwords.txt", 
+                           col_names = "word")
+my_stopwords <- read_table("./BeerComparator/my_stopwords.txt", 
                            col_names = "word")
 
+stopwords <- bind_rows(pt_stopwords, my_stopwords)
+
 beers %>%
-  mutate( review = paste0(malte, " ", sabor) ) %>% 
-  select(nome.completo, tipo, review) %>%
-  unnest_tokens(word, review) %>% 
-  anti_join(pt_stopwords) %>% 
-  count(word, tipo) -> beer_wordc
+  mutate( review = paste0(malte, " ", sabor, " ", cor) ) %>% 
+  select( tipo, review ) %>%
+  unnest_tokens( word, review ) %>% 
+  anti_join( stopwords ) %>% 
+  mutate( word = ptstem(word) ) %>%
+  count( word, tipo ) -> beer_wordc
 
 beer_wordc %>% arrange(desc(n)) %>% head(20)
 
@@ -24,10 +30,9 @@ beer_wordc %>%
 
 head(beer_tf_idf)
 
-
 # create a df for plotting of 
 # the top 16 beers by review count
-top_beers <- aggregate(cerveja ~ tipo, beers, sum) %>% top_n(16, Reviews)
+# top_beers <- aggregate(cerveja ~ tipo, beers, sum) %>% top_n(16, Reviews)
 
 count(beers, tipo, sort=T) %>% top_n(25,n) %>% head(25) -> top_beers
 

@@ -1,0 +1,15 @@
+Portuguese Stemming
+https://cran.r-project.org/web/packages/ptstem/vignettes/ptstem.html
+
+Portuguese stop words
+https://gist.github.com/alopes/5358189
+
+Beer analysis with Tidytext
+http://kaylinwalker.com/tidy-text-beer/
+
+rvest tutorials
+https://stat4701.github.io/edav/2015/04/02/rvest_tutorial/
+https://www.analyticsvidhya.com/blog/2017/03/beginners-guide-on-web-scraping-in-r-using-rvest-with-hands-on-knowledge/
+
+CSS Selectors
+https://www.w3schools.com/cssref/css_selectors.asp
