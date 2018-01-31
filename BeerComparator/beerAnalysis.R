@@ -1,6 +1,8 @@
 library(tidyverse)
 library(tidytext)
 library(ptstem)
+library(corrplot)
+library(ape)
 
 beers <- readRDS("./BeerComparator/data/beers.rds")
 
@@ -50,4 +52,47 @@ ggplot(beer_tidy_tfidf_10, aes(x=as.factor(Rank), y=tf_idf)) +
   coord_flip() + facet_wrap(~ tipo,ncol=5) + 
   geom_text(aes(label=word, x=Rank), y=0,hjust=0, size=3) +
   labs(title="Top TF-IDF Terms for Selected Beer Styles\n", 
-       x="", y="tf-idf") 
+       x="", y="tf-idf") + theme_bw()
+
+
+# get the proportion of words in each 
+# style and create a matrix with
+# styles as columns and words as rows
+beer_corr <- beer_wordc %>%  
+  subset(!is.na(tipo)) %>%
+  group_by(tipo) %>%
+  mutate(prop = n / sum(n))  %>%
+  subset(n >= 5) %>%
+  select(-n) %>%
+  spread(tipo, prop) 
+
+# replace NAs with 0 because an NA 
+# is an observation of 0 words
+beer_corr[is.na(beer_corr)] <- 0 
+
+mycol <- colorRampPalette(c("darkgrey", "grey", "white", "cadetblue1", "cadetblue"))  
+corr <- cor(beer_corr[,-1], use = "pairwise.complete.obs") %>%  
+  corrplot(method="color", order="hclust", diag=FALSE, 
+           tl.col = "black", tl.srt = 45, tl.cex=0.6,
+           #col=mycol(100), 
+           type="lower",
+           title="Correlation Between Beer Styles", 
+           family="Avenir",
+           mar=c(0,0,1,0))
+
+# transpose the matrix to have styles
+# as rows and words as columns
+beer_corr_t <- t(beer_corr[,-1])
+
+# calculate distance
+beer_dist <- dist(beer_corr_t, method="euclidean")
+
+# fit clusters
+fit <- hclust(beer_dist, method="ward.D")
+
+# plot 
+plot(as.phylo(fit),main="Cluster Dendrogram of Beer Styles",  
+     family="Avenir")
+# rect.hclust(fit, k=8, border="cadetblue")
+
+
