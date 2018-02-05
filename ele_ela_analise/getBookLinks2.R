@@ -15,9 +15,10 @@ html.doc %>%
   html_node("#res") %>%
   html_table(fill=T, trim=T, header=F) -> books.table
 
-books.table[8:nrow(books.table), 3:8] %>%
-  setNames(c("title","author","source","format","size","access")) %>%
-  filter( !is.na(title) | title!="" | title!=" ") -> books.attribs
+books.table[8:nrow(books.table), 3:4] %>%
+  setNames(c("title","author")) %>% #,"source","format","size","access")) %>%
+  filter( !is.na(title) | title!="" | title!=" ") %>% 
+  distinct() -> books.attribs
 
 html.doc %>%
   html_nodes("#res tbody tr td a") %>%
