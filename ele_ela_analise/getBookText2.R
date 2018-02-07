@@ -50,7 +50,7 @@ processBookPages <- function(pages){
 }
 
 readRDS("./ele_ela_analise/data/book_links.rds") %>%
-  head(400) %>%
+  head(550) %>%
   assign("books",.,envir = .GlobalEnv) %>%
   apply(., 1,function(x){
     downloadBookCached(x["book.id"], x["download"])  
