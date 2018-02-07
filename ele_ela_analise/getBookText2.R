@@ -4,38 +4,60 @@ library(ggplot2)
 library(tidyr)
 library(purrr)
 library(tidytext)
+library(ptstem)
 
-getBookPages <- function(link){
-  tfile <- tempfile()
-  download.file(link, tfile, mode = "wb", quiet = T)
-  txt  <- pdf_text(tfile)
-  
+
+downloadBookCached <- function(book.id, link, cache.dir="./ele_ela_analise/data/book/"){
+  print(paste0("getting: ", book.id))
+  full.path.name <- paste0(cache.dir, book.id, ".pdf")
+  if (!file.exists(full.path.name)){
+    print("downloading...")
+    tryCatch({
+      download.file(link, full.path.name, mode = "wb", quiet = T)
+    }, condition = function(err) { full.path.name <<- "" })
+  } 
+  return(full.path.name)
+}
+
+getBookPages <- function(fname){
+  print(paste0("reading: ", fname))
+  if(fname=="") return(NULL)
+  txt  <- tryCatch({
+    pdf_text(fname)
+  }, condition = function(err) { return("") })
+
   return( tibble(page=1:length(txt), text=txt))
 }
 
 processBookPages <- function(pages){
 
-  bigrams <- pages  %>%
+  bigrams <- pages  %>% 
     unnest_tokens(bigram, text, token = "ngrams",
                   n = 2, collapse = FALSE)
   
   bigrams_separated <- bigrams %>%
     tidyr::separate(bigram, c("subject", "verb"), sep = " ")
   
+  
+  not_verbs <- read.table("./ele_ela_analise/data/notverbs.txt",
+                          col.names = "verb")
+  
   bigrams_separated %>%
     filter(subject %in% c("ele", "ela")) %>%
+    mutate( verb = ptstem(verb) ) %>%
+    anti_join(not_verbs) %>%
     return()
 }
 
-books <- readRDS("./ele_ela_analise/data/book_links.rds")
-
-n_books <- 200
-
-books$download %>%
-  head(n_books) %>%
+readRDS("./ele_ela_analise/data/book_links.rds") %>%
+  head(400) %>%
+  assign("books",.,envir = .GlobalEnv) %>%
+  apply(., 1,function(x){
+    downloadBookCached(x["book.id"], x["download"])  
+  }) %>%
   map(getBookPages) %>%
-  setNames(books$book.id[1:n_books]) %>%
-  bind_rows(text, .id = "book.id") %T>%
+  setNames(books$book.id) %>% 
+  bind_rows(.id = "book.id") %T>%
   saveRDS("./ele_ela_analise/data/book_texts.rds") %>%
   select(-page) %>%
   processBookPages() -> he_she_verbs
@@ -62,7 +84,13 @@ he_she_verbs %>%
        y = "Relative appearance after 'she' compared to 'he'",
        title = "Words paired with 'he' and 'she' in Jane Austen's novels",
        subtitle = "Women remember, read, and feel while men stop, take, and reply") +
-  scale_color_discrete(name = "", labels = c("More 'she'", "More 'he'")) +
+  scale_color_discrete(name = "", labels = c("Mais'ela'", "mais 'ele'")) +
   scale_y_continuous(breaks = seq(-3, 3),
                      labels = c("0.125x", "0.25x", "0.5x", 
-                                "Same", "2x", "4x", "8x"))
+                                "Igual", "2x", "4x", "8x"))
+
+
+
+
+
+
