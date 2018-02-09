@@ -29,7 +29,7 @@ getBookPages <- function(fname){
   return( tibble(page=1:length(txt), text=txt))
 }
 
-processBookPages <- function(pages){
+extractHeSheVerbs <- function(pages){
 
   bigrams <- pages  %>% 
     unnest_tokens(bigram, text, token = "ngrams",
@@ -50,17 +50,27 @@ processBookPages <- function(pages){
 }
 
 readRDS("./ele_ela_analise/data/book_links.rds") %>%
-  head(550) %>%
+  head(2200) %>% 
+  group_by(title) %>%
+  filter(book.id==max(book.id)) %>%
+  ungroup() %>% 
   assign("books",.,envir = .GlobalEnv) %>%
   apply(., 1,function(x){
     downloadBookCached(x["book.id"], x["download"])  
   }) %>%
   map(getBookPages) %>%
   setNames(books$book.id) %>% 
-  bind_rows(.id = "book.id") %T>%
-  saveRDS("./ele_ela_analise/data/book_texts.rds") %>%
+  bind_rows(.id = "book.id") -> book_texts
+
+saveRDS(book_texts, "./ele_ela_analise/data/book_texts.rds") 
+
+book_texts %>%
   select(-page) %>%
-  processBookPages() -> he_she_verbs
+  extractHeSheVerbs() -> he_she_verbs
+
+saveRDS(he_she_verbs,"./ele_ela_analise/data/he_she_verbs.rds") 
+
+
 
 he_she_verbs %>%
   count(subject, verb, sort = TRUE) %>%
@@ -91,6 +101,18 @@ he_she_verbs %>%
 
 
 
-
-
-
+he_she_verbs %>%
+  filter(total>= 100) %>%
+  ggplot(aes(total, log_ratio)) +
+  geom_point() +
+  scale_x_log10(breaks = c(100, 1000, 10000, 1e5),
+                labels = comma_format()) +
+  geom_text(aes(label = word2), vjust = 1, hjust = 1,
+            check_overlap = TRUE) +
+  scale_y_continuous(breaks = seq(-2, 2),
+                     labels = c('4X "he"', '2X "he"', "Same", '2X "she"', '4X "she"')) +
+  labs(x = 'Total uses after "he" or "she" (note log scale)',
+       y = 'Relative uses after "she" to after "he"',
+       title = "Gendered verbs: comparing frequency to pronoun shift",
+       subtitle = "Only words occurring at least 100 times after he/she. Overlapping labels were removed.") +
+  expand_limits(x = 75)
