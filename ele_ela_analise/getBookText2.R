@@ -6,6 +6,28 @@ library(purrr)
 library(tidytext)
 library(ptstem)
 
+cleanText <- function(verbs){
+  unwanted <- c( "ã¡" = "á",
+                 "ã£" = "ã",
+                 "ã³" = "ó",
+                 "ã§" = "ç",
+                 "ã¼" = "ü",
+                 "ãª" = "ê",
+                 "ã�" = "í",
+                 "ã©" = "é",
+                 "ãš" = "ú",
+                 "ã‰" = "à",
+                 "ã´" = "ô",
+                 "ã " = "à",
+                 "ã‰" = "à" )
+  
+  for(i in seq_along(unwanted)){
+    print(names(unwanted)[i])
+    verbs <- gsub(names(unwanted)[i],unwanted[i],verbs)
+  }
+  
+  return(verbs)
+}
 
 downloadBookCached <- function(book.id, link, cache.dir="./ele_ela_analise/data/book/"){
   print(paste0("getting: ", book.id))
@@ -70,6 +92,8 @@ book_texts %>%
 
 saveRDS(he_she_verbs,"./ele_ela_analise/data/he_she_verbs.rds") 
 
+he_she_verbs <- readRDS("./ele_ela_analise/data/he_she_verbs.rds")
+he_she_verbs$verb <- cleanText(he_she_verbs$verb)
 
 
 he_she_verbs %>%
