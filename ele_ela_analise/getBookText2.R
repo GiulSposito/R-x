@@ -5,6 +5,7 @@ library(tidyr)
 library(purrr)
 library(tidytext)
 library(ptstem)
+library(stringr)
 
 cleanText <- function(verbs){
   unwanted <- c( "ã¡" = "á",
@@ -13,7 +14,7 @@ cleanText <- function(verbs){
                  "ã§" = "ç",
                  "ã¼" = "ü",
                  "ãª" = "ê",
-                 "ã�" = "í",
+                 "ã�" = "í",
                  "ã©" = "é",
                  "ãš" = "ú",
                  "ã‰" = "à",
@@ -64,8 +65,13 @@ extractHeSheVerbs <- function(pages){
   not_verbs <- read.table("./ele_ela_analise/data/notverbs.txt",
                           col.names = "verb")
   
+  nomes <- readRDS("./ele_ela_analise/data/nomes_proprios.rds") %>%
+    mutate( name = str_to_lower(name) ) %>%
+    bind_rows(tibble( name=c("ele","ela"), gender=c("M","F") ))
+  
   bigrams_separated %>%
-    filter(subject %in% c("ele", "ela")) %>%
+    inner_join(nomes,by=c("subject"="name")) %>%
+    anti_join(nomes,by=c("verb"="name")) %>%
     mutate( verb = ptstem(verb) ) %>%
     anti_join(not_verbs) %>%
     return()
@@ -86,7 +92,15 @@ readRDS("./ele_ela_analise/data/book_links.rds") %>%
 
 saveRDS(book_texts, "./ele_ela_analise/data/book_texts.rds") 
 
-book_texts %>%
+books <- readRDS("./ele_ela_analise/data/book_links.rds")
+book_texts <- readRDS("./ele_ela_analise/data/book_texts.rds")
+
+books %>%
+  group_by(title) %>%
+  filter(book.id==max(book.id)) %>%
+  ungroup() %>%
+  select(book.id) %>%
+  inner_join(book_texts) %>%
   select(-page) %>%
   extractHeSheVerbs() -> he_she_verbs
 
@@ -95,13 +109,15 @@ saveRDS(he_she_verbs,"./ele_ela_analise/data/he_she_verbs.rds")
 he_she_verbs <- readRDS("./ele_ela_analise/data/he_she_verbs.rds")
 he_she_verbs$verb <- cleanText(he_she_verbs$verb)
 
-
 he_she_verbs %>%
-  count(subject, verb, sort = TRUE) %>%
+  anti_join(nomes, c("verb"="name")) %>%
+  distinct() %>%
+  count(gender, verb, sort = TRUE) %>%
   rename(total = n) %>%
-  spread(subject, total, fill=0) %>%
+  filter(total>100) %>%
+  spread(gender, total, fill=0) %>%
   mutate_if(is.numeric, funs((. + 1) / sum(. + 1))) %>%
-  mutate(logratio = log2(ela / ele))%>% 
+  mutate(logratio = log2(F / M))%>% 
   arrange(abs(logratio)) %>%
   mutate(abslogratio = abs(logratio)) %>%
   group_by(logratio < 0) %>%
@@ -123,9 +139,12 @@ he_she_verbs %>%
                      labels = c("0.125x", "0.25x", "0.5x", 
                                 "Igual", "2x", "4x", "8x"))
 
-
+he_she_verbs %>% 
+  distinct() %>%
+  filter(verb=="noite") %>% View()
 
 he_she_verbs %>%
+  distinct() %>%
   filter(total>= 100) %>%
   ggplot(aes(total, log_ratio)) +
   geom_point() +
