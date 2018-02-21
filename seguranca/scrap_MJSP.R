@@ -43,10 +43,31 @@ stat.pages$csv.link %>%
       as.tibble()
   }) -> csvs.download
 
-saveRDS(csvs.download, "./seguranca/data/csv_downloaded.rds")
+# saveRDS(csvs.download, "./seguranca/data/csv_downloaded.rds")
+# csvs.download <- readRDS("./seguranca/data/csv_downloaded.rds")
 
 csvs.download %>%
   setNames(stat.pages$title) %>%
   bind_rows(.id = "dataset") %>% 
   mutate( month = dmy(paste0("01/",`Mês.Ano`)) ) %>%
   mutate_if(is.character, as.factor) -> csvs
+
+
+lapply(csvs.download, function(df){
+  apply(df["Código.IBGE.Município"],2,class)
+})
+
+lapply(csvs.download, names)
+
+csvs.download[[13]]
+
+
+
+csvs.download %>%
+  map_df(function(df){
+    df %>%
+      mutate(Código.IBGE.Município = as.character(Código.IBGE.Município))
+  }, .id="dataset") -> d
+
+summary(d)
+
