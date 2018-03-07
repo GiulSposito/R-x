@@ -7,9 +7,6 @@ library(lubridate)
 base.url <- "http://dados.mj.gov.br"
 stat.list <- "/dataset/sistema-nacional-de-estatisticas-de-seguranca-publica"
 
-# pesquisa população IBGE
-# https://sidra.ibge.gov.br/tabela/6579
-
 # 
 html <- read_html(paste0(base.url,stat.list))
 
@@ -40,34 +37,17 @@ stat.pages <- bind_cols(stat.pages, csv.link=csv.link)
 stat.pages$csv.link %>%
   map(function(href){
     read.table(url(href), skip = 4, header = T, sep=";", stringsAsFactors = F) %>%
+      mutate(Código.IBGE.Município = as.character(Código.IBGE.Município)) %>%
       as.tibble()
-  }) -> csvs.download
-
-# saveRDS(csvs.download, "./seguranca/data/csv_downloaded.rds")
-# csvs.download <- readRDS("./seguranca/data/csv_downloaded.rds")
-
-csvs.download %>%
+  }) %>%
   setNames(stat.pages$title) %>%
   bind_rows(.id = "dataset") %>% 
-  mutate( month = dmy(paste0("01/",`Mês.Ano`)) ) %>%
-  mutate_if(is.character, as.factor) -> csvs
+  mutate_if(is.character, as.factor) %>%
+  mutate( month = dmy(paste0("01/",`Mês.Ano`)) ) -> ocorrencias
+  
 
+glimpse(ocorrencias)
 
-lapply(csvs.download, function(df){
-  apply(df["Código.IBGE.Município"],2,class)
-})
-
-lapply(csvs.download, names)
-
-csvs.download[[13]]
-
-
-
-csvs.download %>%
-  map_df(function(df){
-    df %>%
-      mutate(Código.IBGE.Município = as.character(Código.IBGE.Município))
-  }, .id="dataset") -> d
-
-summary(d)
+saveRDS(ocorrencias, "./seguranca/data/ocorrencias.rds")
+# csvs.download <- readRDS("./seguranca/data/csv_downloaded.rds")
 
