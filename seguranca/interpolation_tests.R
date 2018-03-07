@@ -18,31 +18,17 @@ read.table("./seguranca/data/tabela6579.csv",
   # definindo que o "ano" da populacao e o valor da populacao no fim (dezembro)
   mutate(date = ymd(paste0(ano,"/12/01"))) -> pop
 
-# teste de interpolacao
-pop %>%
-  filter(cod.ibge==3550308) %>%
-  (function(dt=.){
-    dt %>%
-      as.tibble() %>%
-      select(date, populacao) %>%
-      right_join(tibble(date=seq.Date(from=min(dt$date),to=max(dt$date),by="month"))) %>%
-      arrange(date) %>%
-      mutate( populacao = na.approx(populacao),
-              ano = year(date) )
-  }) -> x
-
-# plotando
-plot(x$date, x$populacao, type="l") 
-
 # function to interpolate date x population by month
 interPopByMonth <- function(dt=.){
   dt %>%
-    as.tibble() %>%
-    select(date, populacao) %>%
+    as.tibble() %>% #garante ser tibble
+    # cria um tibble indo da menor data a maior data mes a mes e faz join
     right_join(tibble(
       date=seq.Date(from=min(dt$date),to=max(dt$date),by="month")
       ), by="date") %>%
+    # ordena por data
     arrange(date) %>%
+    # interpola linearmente e reconstroi ano
     mutate( populacao = na.approx(populacao),
             ano = year(date) ) %>%
     return()
@@ -52,21 +38,23 @@ interPopByMonth <- function(dt=.){
 pop %>%
   filter( nivel=="MU", 
           grepl("São Paulo [/(].*", municipio) | 
+          grepl("^Campinas [/(]SP.*", municipio) | 
+          grepl("^Belém [/(]PA.*", municipio) |
+          grepl("^Natal [/(]RN.*", municipio) |
+          grepl("^Campo Grande [/(]MS.*", municipio) |
           grepl("Rio de Janeiro [/(].*", municipio) |
           grepl("Belo Horizonte [/(].*", municipio) |
           grepl("Recife [/(].*", municipio) | 
           grepl("Salvador [/(].*", municipio) |
           grepl("Porto Alegre [/(].*", municipio) | 
           grepl("Aracaju [/(].*", municipio) | 
-          grepl("Florianópolis [/(].*", municipio) ) %>%
+          grepl("Florianópolis [/(].*", municipio) ) %>% 
+  # remove ano (sera refeito na interpolacao)
   select(-ano) %>%
+  # para cada "municipio" agrupa os dados em dataframes diferentes
   group_by(nivel, cod.ibge, municipio) %>%
   nest() %>%
+  # aplica a interpolacao
   mutate( data = data %>% map(interPopByMonth) ) %>%
-  unnest() -> x
-
-# # lendo ocorrencias
-readRDS("./seguranca/data/ocorrencias.rds") %>%
-  setNames(c("fonte","regiao","UF","estado","cod.ibge","municipio",
-          "crime","mes","mes.ano","ocorrencias","data")) -> occ
-
+  # recompoe a tabela
+  unnest() -> pop
