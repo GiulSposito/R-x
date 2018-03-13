@@ -1,0 +1,153 @@
+---
+title: "O Rio de Janeiro ficou mais violento este ano?"
+output: html_notebook
+---
+
+Todos acompanharam as notícias de intervenção no Rio de Janeiro recentemente, sobre o pretesto que das escalada da violência e criminalidade na cidade. Mas será que o Rio de Janeiro ficou de fato mais violento? E comparado a outras cidades, ela é proporcional ou diferente do que acontece em outras cidades do Brasil? Usaremos esse tema para exercitar análises de dados usando dados disponíveis em sites públicos.
+
+<!-- more --> 
+
+## Pré-requisitos
+
+Para se analisar dados de violência e criminalidade dois dados são necessários:
+
+1. Número de Ocorrências Policiais
+2. População do Município
+
+Não podemos analisar somente o número de ocorrências, pois se espera que cidades com mais habitantes possuam mais ocorrências, então é necessário analisar as taxas (ocorrências/população), mas isso também não é suficiente. Também espara-se que cidades com patamares populacionais diferentes, tenham atratividades economicas diferentes e portanto índices de criminalidade distintos, por exemplo, não se pode comparar diretametne taxas de criminalidade de uma cidade com 100 mil habitantes com São Paulo, BH ou Rio, que possuem milhões de habitantes.
+
+## Dados
+
+Duas fontes de dados possíveis veem a mente quando se trata de população e ocorrências policiais: [IBGE](https://www.ibge.gov.br/) e [Ministério da Justiça](http://justica.gov.br/), respectivamente.
+
+### População
+
+O site do [IBGE](https://www.ibge.gov.br) é bem abrangente, há muita informação, tanto para busca manual como para [APIs](https://servicodados.ibge.gov.br/api/docs), para vários indicadores economicos e sociais (mas curiosamente não há sobre criminalidade e ocorrências policiais). Navegando pela estrutura buscando pela informação de população dos municípios, a maneira mais rápida de se conseguir os números encontradas foi fazendo a consulta via [SIDRA](https://sidra.ibge.gov.br/) (Sistema IBGE de Recuperação Automática, que permite buscar várias estatísticas e indicadores) e consultando pela _população residente estimada_ por _unidade territorial_ (que pode ser região, estado ou município). [Feita a consulta](https://sidra.ibge.gov.br/tabela/6579) você pode baixar o CSV (_tabela6579.csv_) para importar.
+
+Os dados vêem consolidados por unidade territorial (que pode ser estado ou municipio) e por ano.
+
+```{r readPopCSV, cache=TRUE}
+# setup 
+library(tidyverse)
+library(lubridate)
+
+# lendo dados da populacao populacao
+read.table("./data/tabela6579.csv",
+           sep = ";",
+           skip=3, # ha duas linhas iniciais com comentarios
+           nrows = 83955,
+           encoding = "UTF-8",
+           stringsAsFactors = F,
+           header = F) %>% # nao importaremos o header
+  # Definindo o header manualmente (ele tem acentos no CSV)
+  setNames(c("nivel","cod.ibge","municipio","num","ano","populacao")) %>%
+  # o numero do registro nao interessa
+  select(-num) %>% 
+  # populacao foi importada como "string", ajustando para inteiro
+  mutate(populacao=as.integer(populacao)) %>% 
+  # definindo que o número da populacao para um ano X eh a sua medida em dezembro
+  mutate(date = ymd(paste0(ano,"/12/01"))) %>%
+  as.tibble() -> pop
+
+header(pop)
+
+```
+
+### Ocorrências
+
+Já uma base nacional de ocorrências policiais foi encontrada no site do [Ministério da Justiça](http://justica.gov.br/), que na época desta análise ainda era Ministério da Justiça e Segurança Pública. A base consolidada esta mais especificamente no [SINESPJC](http://dados.mj.gov.br/dataset/sistema-nacional-de-estatisticas-de-seguranca-publica) - sistema Nacional de Estatísticas de Segurança Pública e Justiça Criminal.
+
+Entretanto os dados na página estão separados em arquivos tipo CSV por ano. Cada link leva a uma página que exibe os dados e também um link para download
+
+Será então necessário fazer um _data scrapping_ para pegar cada um das páginas e então obter o link do CSV nela para fazer o download.
+
+```{r mjDataScrappnig, cache=TRUE, eval=FALSE}
+# pacote de data scrapping
+library(rvest)
+
+# url que lista as páginas de estatistica
+base.url <- "http://dados.mj.gov.br"
+stat.list <- "/dataset/sistema-nacional-de-estatisticas-de-seguranca-publica"
+
+# puxa a página que lista os links para os CSVs
+html <- read_html(paste0(base.url,stat.list))
+
+# Nesta página obtem a url das páginas
+html %>%
+  html_nodes(".heading") %>%
+  html_attr("href") %>%
+  na.omit() %>%
+  paste0(base.url, .) -> page
+
+# obtem os nomes de cada um dos CSVs
+html %>%
+  html_nodes(".heading") %>%
+  html_attr("title") %>%
+  na.omit() -> title
+
+# monta um data.frame com os links encontrados
+tibble( title, page ) %>%
+  filter(grepl("ocorrencias.+", title)) -> stat.pages
+
+# para cada url encontrada...
+stat.pages$page %>%
+  map(function(url){
+    #  faz o fetch da página
+    read_html(url) %>%
+      # obtem o link do CSV
+      html_node("p.muted a") %>%
+      html_attr("href")    
+  }) %>% 
+  unlist() -> csv.link
+
+# Adiciona o link ao data.frame
+stat.pages <- bind_cols(stat.pages, csv.link=csv.link)
+
+# para cada link
+stat.pages$csv.link %>%
+  map(function(href){
+    # faz o download e a leitura do CSV
+    read.table(url(href), skip = 4, header = T, sep=";", stringsAsFactors = F) %>%
+      mutate(Código.IBGE.Município = as.character(Código.IBGE.Município)) %>%
+      as.tibble()
+  }) %>%
+  # o "map" volta uma lista de tibbles, nomeia cada item da lista com o titulo do link
+  setNames(stat.pages$title) -> occ.cvs.downloaded
+
+# take a look in one of tibbles
+head(occ.cvs.downloaded[[1]])
+```
+
+
+```{r occSaveBuffer, cache=TRUE, echo=FALSE}
+if (!is.null(occ.cvs.downloaded)) {
+  saveRDS(occ.cvs.downloaded,"./data/occ_csv_download.rds")
+} else {
+  occ.cvs.downloaded <- readRDS("./data/occ_csv_download.rds")
+}
+```
+
+Com a lista de data frames de ocorrencias por ano em mãos, vamos fundir as informaç~eos a justar o header e os tipos das colunas.
+
+```{r occColumntype, cache=TRUE}
+# lista de tibbles
+occ.cvs.downloaded %>%
+  # funde em um unico dataframe
+  bind_rows(.id = "dataset") %>% 
+  # converte dados para fator (temporariamente)
+  mutate_if(is.character, as.factor) %>%
+  # transforma o "mes" em uma data
+  mutate( month = dmy(paste0("01/",`Mês.Ano`)) ) %>%
+  # ajusta nomes do header
+  setNames(c("fonte","regiao","UF","estado","cod.ibge","municipio",
+             "crime","mes","mes.ano","ocorrencias","data")) %>%
+  # corrige as tipagens do codigo e do numero de ocorrencias
+  mutate( cod.ibge = as.integer(as.character(cod.ibge)),
+          ocorrencias = as.integer(ocorrencias)) -> occ
+
+# dando uma olhada
+head(occ)
+```
+
+Podemos observar que o `cod.ibge` é uma chave comum entre os dois datasets, o que facilitará o cruzamento de dados de população e ocorrências policiais.
+
