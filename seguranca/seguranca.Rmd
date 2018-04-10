@@ -1,11 +1,25 @@
 ---
-title: "O Rio de Janeiro ficou mais violento este ano?"
-output: html_notebook
+title: "O Rio de Janeiro ficou mais violento no Último ano?"
+output:
+  html_document:
+    df_print: paged
 ---
 
 Todos acompanharam as notícias de intervenção no Rio de Janeiro recentemente, sobre o pretesto que das escalada da violência e criminalidade na cidade. Mas será que o Rio de Janeiro ficou de fato mais violento? E comparado a outras cidades, ela é proporcional ou diferente do que acontece em outras cidades do Brasil? Usaremos esse tema para exercitar análises de dados usando dados disponíveis em sites públicos.
 
 <!-- more --> 
+
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+# setup
+library(knitr)
+
+# default behavior for chunks
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(cache = TRUE)
+```
+
 
 ## Pré-requisitos
 
@@ -49,7 +63,7 @@ read.table("./data/tabela6579.csv",
   mutate(date = ymd(paste0(ano,"/12/01"))) %>%
   as.tibble() -> pop
 
-header(pop)
+head(pop)
 
 ```
 
@@ -120,7 +134,7 @@ head(occ.cvs.downloaded[[1]])
 
 
 ```{r occSaveBuffer, cache=TRUE, echo=FALSE}
-if (!is.null(occ.cvs.downloaded)) {
+if (exists("occ.cvs.downloaded")) {
   saveRDS(occ.cvs.downloaded,"./data/occ_csv_download.rds")
 } else {
   occ.cvs.downloaded <- readRDS("./data/occ_csv_download.rds")
