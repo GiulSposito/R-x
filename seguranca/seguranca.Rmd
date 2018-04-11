@@ -314,20 +314,62 @@ head(crime.rates,10)
 
 ```
 
-Vamos visualizar as taxas nas maiores cidades.
+Vamos visualizar as taxas nas maiores cidades e a tendência na taxa (linear) para os último 7 anos (a partir de 2010).
 
 ```{r vizCrimeRate}
 
+# das taxas de crimes calculadas
 crime.rates %>%
+  # maiores cidades
   inner_join(top.pop.mun, by="cod.ibge") %>%
+  # a partir de 2010
   filter( data >= ymd("20100101") ) %>%
   # plota
   ggplot(aes(data,taxa)) +
     geom_point(aes(colour=municipio)) +
-    stat_smooth(aes(colour=municipio), method = "loess") +
+    stat_smooth(aes(colour=municipio), method = "lm") +
     facet_wrap(~municipio) +
     theme(legend.position="none")
   
 
 ```
+
+Com a taxa calculada, podemos tentar responder a questão, o número de crimes no Rio de Janeiro cresceu "mais" que outras cidades? (Spoiler: já neste gráfico, dá para ver que desde de 2010, a criminalidade no rio, diminuiu na verdade.)
+
+## A análise
+
+A comparação de cidades não pode ser feita diretamente sem antes, pelo menos, segmentar as cidades em número de habitantes. Cidades muito pequenas tem dinâmicas sociais bem distintas de cidades muito grandes. Vamos fazer a análise segregando as cidades pelo numero de habitantes seguindo a mesma classificação de cidades usada pelo IBGE.
+
+```{r cityTypes}
+
+# classificando os municipios
+pop %>%
+  # informacao mais recente dos municipios
+  filter(
+    date == max(date),
+    nivel == "MU" 
+  ) %>% mutate(
+    # classifica por tipo
+    tipo = case_when(
+      populacao <  5*10^4                      ~ "pequena",
+      populacao >= 5*10^4 & populacao < 10^5   ~ "media-pequena",
+      populacao >= 10^5   & populacao < 3*10^5 ~ "media",
+      populacao >= 3*10^5 & populacao < 5*10^5 ~ "media-grande",
+      populacao >= 5*10^5 & populacao < 10^6   ~ "grande",
+      populacao >= 10^6 ~ "metropole"
+    ) %>% as.factor()
+  ) %>%
+  select( cod.ibge, tipo ) %>%
+  inner_join(crime.rates) -> municipios
+
+# exemplos
+set.seed(42)
+municipios[sample(1:nrow(municipios),10),c(1,2,3,7)]
+
+```
+
+
+A maneira mais fácil para comparar as taxas de crescimento da criminalidade, é fazer uma regressão linear de cada município, para os últimos 3 anos (por exemplo, a partir de 2015) e comparar os coeficiêntes de inclinação $\beta_1$ do modelo (assumindo que a interceptação é $\beta_0$).
+
+Como vimos, os dados de criminalidade disponíveis no MJSP, possuem gaps e muita variação de um período para outro (veja a cidade de Curitiba, no gráfico anterior, cuja as taxas pulam mais de 10 vezes entre 2010 à 2014), o que pode evidênciar baixa qualidade na informação, assim, outra informação relevante, retirada das regressões de cada Município, é o [R-squared](http://blog.minitab.com/blog/adventures-in-statistics-2/how-high-should-r-squared-be-in-regression-analysis). O $R2$ pode ser um indicativo da confiabilidade da têndência obtida pelo model.
 
