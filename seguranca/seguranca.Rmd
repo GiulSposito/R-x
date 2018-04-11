@@ -1,5 +1,5 @@
 ---
-title: "O Rio de Janeiro ficou mais violento no Último ano?"
+title: "O Rio de Janeiro ficou mais violento comparado a outras cidades?"
 output:
   html_document:
     df_print: paged
@@ -141,7 +141,7 @@ if (exists("occ.cvs.downloaded")) {
 }
 ```
 
-Com a lista de data frames de ocorrencias por ano em mãos, vamos fundir as informaç~eos a justar o header e os tipos das colunas.
+Com a lista de data frames de ocorrencias por ano em mãos, vamos fundir as informações a justar o header e os tipos das colunas.
 
 ```{r occColumntype, cache=TRUE}
 # lista de tibbles
@@ -164,4 +164,137 @@ head(occ)
 ```
 
 Podemos observar que o `cod.ibge` é uma chave comum entre os dois datasets, o que facilitará o cruzamento de dados de população e ocorrências policiais.
+
+## Vizualizando os dados
+
+### População
+
+Vamos visualizar alguns dos dados de população disponíveis (municípios com maior população).
+
+```{r vizPopData, fig.width=10, fig.align="center"}
+
+# selecionando municipios mais populosos
+pop %>%
+  # pega informacao mais recente dos municipios
+  filter( date == max(date),
+          nivel == "MU" ) %>%
+  # seleciona os mais populosos
+  top_n( 12, populacao ) %>%
+  arrange( desc(populacao) ) %>%
+  # codigo e nome
+  select( cod.ibge ) -> top.pop.mun
+
+pop %>%
+  filter(date >= ymd("20070101")) %>%
+  inner_join(top.pop.mun, by="cod.ibge") %>%
+  # plota
+  ggplot(aes(date,populacao)) +
+    geom_line(aes(colour=municipio)) +
+    geom_point(aes(colour=municipio)) +
+    facet_wrap(~municipio) +
+    theme(legend.position="none")
+
+```
+
+São medidas anuais, aparentemente consistentes e, com excessão de 2011, os dados estão presentes lá.
+
+### Ocorrências
+
+Já os dados de ocorrência, não parecem assim tão consistentes.
+
+```{r vizOccData, fig.width=10, fig.align="center"}
+
+# Visualizando ocorrencias
+occ %>%
+  # pega os ultimos 10 anos de dados
+  filter(data>=ymd("20070101")) %>%
+  # somente os mais populosos
+  inner_join(top.pop.mun, by="cod.ibge") %>%
+  select(cod.ibge, municipio, crime, date=data, ocorrencias) %>%
+  # agrupa por data
+  group_by(cod.ibge, municipio, date) %>%
+  # somando os crimes
+  summarise( ocorrencias = sum(ocorrencias, na.rm = T)) %>%
+  # plota
+  ggplot(aes(date,ocorrencias)) +
+    geom_point(aes(colour=municipio)) +
+    stat_smooth(aes(colour=municipio)) +
+    facet_wrap(~municipio) +
+    theme(legend.position="none")
+
+  
+```
+
+
+Nos municípios de maior população os dados não são completos, há gaps ou simplesmente param em uma certa data. Salvador, por exemplo só tem dado até 2014. Há alguns degraus, por exemplo, Rio de Janeiro, entre de 2010 e 2014, parece estar "saltado" mostrando uma descontinuidade não natural. Os dados de Belo Horizonte, estão praticamente zerados antes de 2010, o que pode indicar que os dados de segurança, disponibilizados no site do MJSP, não são muito confiáveis.
+
+Além disso, aparentemente só alguns tipos de crime foram tabulados, pois a categorização se retringe somente a 6 tipos. 
+
+```{r tipoOcorrencias}
+# quais os tipos de ocorrencias
+occ %>%
+  filter( data >= ymd("20100101")) %>%
+  mutate( ano = year(data))  %>%
+  group_by(ano, crime) %>%
+  summarise(total = sum(ocorrencias, na.rm = T)) %>%
+  spread(ano, total)
+
+```
+
+
+## Calculando taxas de violência
+
+### Interpolando os dados
+
+Os dados de indicadores de criminalidade obtitos no site do MJSP são de base mensal enquanto os de população obtido no IBGE são anuais. Se quisermos obter as taxas de criminalidade precisamos colocar sob a mesma base de cálculo.
+
+Como as taxas de população são mais estáveis, vamos interpolar, mês-à-mês, os dados populacionais entre um ano e outro. Usaremos a função [`na.approx`](https://www.rdocumentation.org/packages/zoo/versions/1.8-1/topics/na.approx) do pacote [`Zoo`](https://cran.r-project.org/web/packages/zoo/vignettes/zoo-quickref.pdf) para fazer uma interpolação linear dos pontos faltante. 
+
+```{r interPop}
+# declara a na.approx para interpolacao de valores
+library(zoo)
+
+# funcao apra interpolar date x population por mes.
+interPopByMonth <- function(dtf=.){
+  dtf %>%
+    as.tibble() %>%
+    # caso o registro ja tenha dados vazios
+    filter(!is.na(populacao)) %>%
+    # cria um tibble indo da menor data a maior data mes a mes e faz join
+    right_join(
+        tibble(date=seq.Date(from=min(.$date),to=max(.$date),by="month")),
+        by="date") %>%
+    # ordena por data
+    arrange(date) %>%
+    # interpola linearmente e reconstroi ano
+    mutate( populacao = as.integer(round(na.approx(populacao))),
+            ano = as.integer(year(date)) ) %>%
+    return()
+}
+
+# a partir dos dados de populacao
+pop %>%
+  # para cada "municipio" agrupa os dados
+  group_by(nivel, cod.ibge, municipio) %>%
+  # em dataframes diferentes 
+  nest() %>%
+  # neste ponto os dataframes tem dados populacionais
+  # anuais (datas de 01.dez.ANO), um data frame para cada municipio
+  # passa esse dataframe para a funcao que interpola completando os dados
+  mutate( data = data %>% map(interPopByMonth) ) %>%
+  # recompoe a tabela 'desaninhando' os dataframes
+  unnest() -> interp.pop
+
+# visualizando
+head(interp.pop)
+
+```
+
+### Computando as taxas
+
+Agora com os dados populacionais em base mensal, podemos fazer a associação com as ocorrências.
+
+```{r crimeRates}
+
+```
 
