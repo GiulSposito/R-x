@@ -177,7 +177,8 @@ Vamos visualizar alguns dos dados de população disponíveis (municípios com maior
 pop %>%
   # pega informacao mais recente dos municipios
   filter( date == max(date),
-          nivel == "MU" ) %>%
+          nivel == "MU",
+          cod.ibge != 5300108 ) %>%
   # seleciona os mais populosos
   top_n( 12, populacao ) %>%
   arrange( desc(populacao) ) %>%
@@ -218,7 +219,7 @@ occ %>%
   # plota
   ggplot(aes(date,ocorrencias)) +
     geom_point(aes(colour=municipio)) +
-    stat_smooth(aes(colour=municipio)) +
+    stat_smooth(aes(colour=municipio), method = "loess") +
     facet_wrap(~municipio) +
     theme(legend.position="none")
 
@@ -295,6 +296,38 @@ head(interp.pop)
 Agora com os dados populacionais em base mensal, podemos fazer a associação com as ocorrências.
 
 ```{r crimeRates}
+
+# a partir das ocorrencias
+occ %>%
+  # agrupa por municipio e data
+  group_by(cod.ibge, data) %>%
+  # soma as ocorrencias (todos os tipos de crime)
+  summarise( ocorrencias = sum(ocorrencias) ) %>%
+  # adiciona a informacao de populcacao
+  inner_join(interp.pop, by=c("cod.ibge","data"="date")) %>%
+  # calcula a taxa em ocorrencias por 100 mil habitantes
+  mutate( taxa = round(10^5 * ocorrencias / populacao, 2) ) %>%
+  select( cod.ibge, municipio, ano, data, ocorrencias, populacao, taxa) -> crime.rates
+
+# as 10 maiores taxas
+head(crime.rates,10)
+
+```
+
+Vamos visualizar as taxas nas maiores cidades.
+
+```{r vizCrimeRate}
+
+crime.rates %>%
+  inner_join(top.pop.mun, by="cod.ibge") %>%
+  filter( data >= ymd("20100101") ) %>%
+  # plota
+  ggplot(aes(data,taxa)) +
+    geom_point(aes(colour=municipio)) +
+    stat_smooth(aes(colour=municipio), method = "loess") +
+    facet_wrap(~municipio) +
+    theme(legend.position="none")
+  
 
 ```
 
