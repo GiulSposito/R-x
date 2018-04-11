@@ -360,11 +360,11 @@ pop %>%
     ) %>% as.factor()
   ) %>%
   select( cod.ibge, tipo ) %>%
-  inner_join(crime.rates) -> municipios
+  inner_join(crime.rates) -> criminalidade
 
 # exemplos
 set.seed(42)
-municipios[sample(1:nrow(municipios),10),c(1,2,3,7)]
+criminalidade[sample(1:nrow(criminalidade),10),c(1,2,3,7)]
 
 ```
 
@@ -372,4 +372,40 @@ municipios[sample(1:nrow(municipios),10),c(1,2,3,7)]
 A maneira mais fácil para comparar as taxas de crescimento da criminalidade, é fazer uma regressão linear de cada município, para os últimos 3 anos (por exemplo, a partir de 2015) e comparar os coeficiêntes de inclinação $\beta_1$ do modelo (assumindo que a interceptação é $\beta_0$).
 
 Como vimos, os dados de criminalidade disponíveis no MJSP, possuem gaps e muita variação de um período para outro (veja a cidade de Curitiba, no gráfico anterior, cuja as taxas pulam mais de 10 vezes entre 2010 à 2014), o que pode evidênciar baixa qualidade na informação, assim, outra informação relevante, retirada das regressões de cada Município, é o [R-squared](http://blog.minitab.com/blog/adventures-in-statistics-2/how-high-should-r-squared-be-in-regression-analysis). O $R2$ pode ser um indicativo da confiabilidade da têndência obtida pelo model.
+
+
+```{r fitModel}
+
+fit_model <- function(crimedata){
+  lm(taxa ~ data, data = crimedata) 
+}
+
+criminalidade %>%
+  select(-ano, -ocorrencias, -populacao) %>%
+  filter( data >= ymd("20160101")) %>%
+  group_by( cod.ibge, municipio, tipo) %>%
+  nest() %>%
+  mutate( model = data %>% map(fit_model) ) %>%
+  mutate(
+    gancle  = model  %>% map(broom::glance),
+    tidy    = model  %>% map(broom::tidy),
+    augment = model  %>% map(broom::augment)
+  ) -> crime.models
+
+# exemplos
+set.seed(1975)
+crime.models[sample(1:nrow(crime.models),10),]
+
+crime.models %>%
+  mutate( rsq = gancle %>% map_dbl("r.squared") ) %>%
+  unnest( tidy ) %>% 
+  filter( term=="data", tipo!="pequena" ) %>%
+  select( cod.ibge, municipio, tipo, estimate, rsq ) %>%
+  ggplot() +
+    geom_point( aes(rsq, estimate, color=tipo) ) + 
+    facet_wrap(~tipo) +
+    theme(legend.position="none")
+
+
+```
 
