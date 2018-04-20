@@ -1,0 +1,57 @@
+---
+title: "Rendimentos Operações"
+output: html_notebook
+---
+
+```{r setup}
+knitr::opts_knit$set(root.dir = '../')
+
+library(zoo) 
+library(lubridate)
+library(plotly)
+library(tidyverse)
+```
+
+```{r rendimentos}
+
+prov <- getProventos()
+port <- getPortfolio()
+
+port %>%
+  mutate( data.update=data.compra,
+          valor = 0, 
+          data.pagamento = data.compra, 
+          data.base = data.compra, 
+          cota.base = cotacao.compra,
+          rendimento = 0 ) %>%
+  select( ativo, data.update, valor, 
+          data.pagamento, data.base, cota.base,
+          rendimento) %>%
+  bind_rows(prov) %>%
+  arrange(data.base) -> proventos
+
+proventos %>%
+  group_by(ativo, data.pagamento, data.base, cota.base) %>%
+  summarise(valor=sum(valor)) -> prv
+
+port %>%
+  mutate( operacao = 1:n() ) %>%
+  inner_join( prv, by="ativo" ) %>%
+  filter( data.pagamento >= data.compra  ) %>%
+  mutate( total.proventos = volume * valor ) %>%
+  group_by( operacao ) %>%
+  mutate( proventos.acumulados = cumsum(total.proventos) ) %>%
+  ungroup() %>%
+  mutate( capital = volume * cota.base, 
+          posicao = capital + proventos.acumulados, 
+          rendimentos = round(100*(posicao-valor.invest)/valor.invest,1)) -> pos
+
+pos %>%
+  ggplot(aes(data.base, rendimentos, group=operacao)) +
+  geom_line(aes(color=ativo)) +
+  ylab("Rendimento (%)") -> g
+
+ggplotly(g)
+
+```
+
