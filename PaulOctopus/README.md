@@ -1,6 +1,6 @@
 # Paul, The Octopus
 
-![./img/paul_octopus.png]
+![Paul, The Octopus Logo](./img/paul_octopus.png)
 
 Há 8 anos atrás, o "Polvo Paul" fez história na África do Sul ao acertar mais de 85% das suas previsões de vencedores na Copa do Mundo de 2010. 
 
