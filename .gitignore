@@ -6,3 +6,4 @@
 .httr-oauth*
 BGS_Cache
 ftp files
+.Renviron
