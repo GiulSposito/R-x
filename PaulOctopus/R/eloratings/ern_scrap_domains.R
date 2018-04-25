@@ -25,7 +25,7 @@ elo_scrapResults <- function(year){
   elo_getUrl(ELOR$year_matchs, year) %>%
     readr::read_tsv(
       col_names = c("match.year","match.month","match.day",
-                    "home.team","away.team","home.score","away.score",
+                    "home.team.cod","away.team.cod","home.score","away.score",
                     "tournament.cod","location",
                     "home.deltaElo", "home.newElo", "away.newElo",
                     "home.deltaRank", "away.deltaRank",
@@ -40,3 +40,22 @@ elo_scrapResults <- function(year){
     return()
 }
 
+elo_getUrl(ELOR$year_start_ratings, year) %>%
+  readr::read_tsv(col_names = c("mark","rank","team.cod","rating",
+                                "rank.highest", "rating.highest",
+                                "rank.average","rating.average",
+                                "rank.lowest","rating.lowest",
+                                "rank.delta.3m", "rating.delta.3m",
+                                "rank.delta.6m", "rating.delta.6m",
+                                "rank.delta.1y", "rating.delta.1y",
+                                "rank.delta.2y", "rating.delta.2y",
+                                "rank.delta.5y", "rating.delta.5y",
+                                "rank.delta.10y", "rating.delta.10y",
+                                "total.matchs", "total.matchs.home", "total.matchs.away", "total.matchs.neutral",
+                                "total.wins", "total.losses", "total.draws",
+                                "total.goals.for", "total.goals.against"),
+                  quote = "") %>%
+  select(-mark) %>%
+  mutate( rank.yer = ymd(paste0(year,"0101")) ) -> elo.rank
+
+elo.rank %>% mutate_at(.vars=dplyr::contains("delta"), .funs=as.integer)
