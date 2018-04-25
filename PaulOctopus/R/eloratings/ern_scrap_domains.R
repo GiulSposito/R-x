@@ -28,16 +28,22 @@ elo_scrapResults <- function(year){
       col_names = c("match.year","match.month","match.day",
                     "home.team.cod","away.team.cod","home.score","away.score",
                     "tournament.cod","location",
-                    "home.deltaElo", "home.newElo", "away.newElo",
+                    "home.deltaRating", "home.newRating", "away.newRating",
                     "home.deltaRank", "away.deltaRank",
                     "home.newRank","away.newRank"),
       quote="") %>%
     mutate( match.date  = ymd(paste0(match.year, match.month, match.day)),
             match.month = as.integer(match.month),
             match.day   = as.integer(match.day),
+            location    = ifelse(is.na(location),home.team.cod,location),
             home.deltaRank = .convertNumber(home.deltaRank),
             away.deltaRank = .convertNumber(away.deltaRank),
-            away.deltaElo  = -home.deltaElo ) %>%
+            away.deltaRating  = -home.deltaRating,
+            home.rating    = home.newRating - home.deltaRating,
+            away.rating    = away.newRating - away.deltaRating,
+            home.rank      = home.newRank + home.deltaRank,
+            away.rank      = away.newRank + away.deltaRank,
+            home.atHome    = ifelse(is.na(location),0,as.integer(home.team.cod==location))) %>% View()
     return()
 }
 
