@@ -24,7 +24,7 @@ ELOR = list(
 # function to calc specific urls
 .urlAddTimestamp <- function(url) paste0(url, "?_=", as.integer(Sys.time())) 
 .urlAddYear <- function(url,year) url %>% gsub("AAAA",year,.)
-elo_getUrl <- function(url, year="") url %>% .urlAddTimestamp() %>% .urlAddYear(year)
+.elo_getUrl <- function(url, year="") url %>% .urlAddTimestamp() %>% .urlAddYear(year)
 
 # examples
 # getEloUrl(ELOR$year_matchs,2011)

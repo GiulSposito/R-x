@@ -5,25 +5,25 @@ source("./PaulOctopus/R/eloratings/ern_common.R")
 .convertNumber <- function(x) x %>% iconv() %>% gsub("â^'","-",.) %>% as.integer()
 
 elo_scrapTeam <- function(){
-  elo_getUrl(ELOR$teams) %>%
+  .elo_getUrl(ELOR$teams) %>%
     readr::read_tsv(col_names = c("team.cod","team.name"), quote="", col_types = "cc") %>%
     return()
 }
 
 elo_scrapTournaments <- function(){
-  elo_getUrl(ELOR$tournaments) %>%
+  .elo_getUrl(ELOR$tournaments) %>%
     readr::read_tsv(col_names = c("tournament.cod","tournament.name"), quote="", col_types = "cc") %>%
     return()
 }
 
 elo_scrapLabels <- function(){
-  elo_getUrl(ELOR$labels) %>%
+  .elo_getUrl(ELOR$labels) %>%
     readr::read_tsv(col_names = c("label.cod","label.name"), quote="", col_types = "cc") %>%
     return()
 }
 
 elo_scrapResults <- function(year){
-  elo_getUrl(ELOR$year_matchs, year) %>%
+  .elo_getUrl(ELOR$year_matchs, year) %>%
     readr::read_tsv(
       col_names = c("match.year","match.month","match.day",
                     "home.team.cod","away.team.cod","home.score","away.score",
@@ -49,7 +49,7 @@ elo_scrapResults <- function(year){
 
 
 elo_scrapRank <- function(year) {
-  elo_getUrl(ELOR$year_start_ratings, year) %>%
+  .elo_getUrl(ELOR$year_start_ratings, year) %>%
     readr::read_tsv(col_names = c("mark","rank","team.cod","rating",
                                   "rank.highest", "rating.highest",
                                   "rank.average","rating.average",
