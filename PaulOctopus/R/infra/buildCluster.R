@@ -34,11 +34,8 @@ createRCluster <- function(name = "giul-rcluster",
   simulation <- function(x){
     return(sessionInfo())
   }
-  
-  # setup local libraries (in the cluster)
-  if (!is.null(setEnvFunction)) install_libs_result <- future_lapply(1:n, setupLibrariesOnRemote, future.scheduling = F )
-  
-  # remote invocation to get status
+
+    # remote invocation to get status
   all_results <- future_lapply(1:n, FUN=simulation, future.scheduling = F)
     
   return(list(vms=vms, vms_check=all_results))
