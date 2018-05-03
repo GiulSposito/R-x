@@ -13,8 +13,20 @@ res <- future.apply::future_lapply(vms, function(x){
   installed.packages()
 })
 
+res <- future.apply::future_lapply(vms,
+                                   function(x){
+                                     require(tidyverse)
+                                     installed.packages() %>%
+                                       as.tibble() %>%
+                                       list(packages=., session=sessionInfo()) %>%
+                                       return()
+                                   })
+
 # stop cluster
 stopRCluster(vms)
+
+vms <- startRCluster(vms)
+vms <- gce_vm(vms)
 
 # setup instances environment
 # scrap football results
