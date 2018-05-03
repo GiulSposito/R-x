@@ -5,7 +5,6 @@ if (!"needs" %in% installed.packages()) install.packages("needs")
 
 # basic package
 library(needs)
-needs(rvest)
 needs(tidyverse)
 
 # url constants
