@@ -67,3 +67,15 @@ res %>%
       as.tibble() %>%
       filter(Package=="dplyr")
   })
+
+
+future_lapply(vms, 
+              function(x) as.data.frame(installed.packages()),
+              future.scheduling = F) -> res
+
+future_lapply(vms, 
+              function(x) install.packages("dplyr"),
+              future.scheduling = F) -> res
+
+
+res[[1]] %>% View()
