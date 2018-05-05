@@ -1,8 +1,9 @@
 FROM rocker/r-base
 
 # install R package dependencies
-RUN apt-get update && apt-get install -y \
-    libssl-dev \
+RUN apt-get update \ 
+    && apt-get install -y libssl-dev \
+    && apt-get install -y libcurl4-openssl-dev \
     ## clean up
     && apt-get clean \ 
     && rm -rf /var/lib/apt/lists/ \ 
