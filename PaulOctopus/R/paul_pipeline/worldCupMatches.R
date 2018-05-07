@@ -21,7 +21,8 @@ importWorldCupMatches <- function(){
     left_join(.teams, by=c("home"="team.name")) %>%
     rename(home.team.cod = team.cod) %>%
     left_join(.teams, by=c("away"="team.name")) %>%
-    rename(away.team.cod = team.cod) %>%
+    rename(away.team.cod = team.cod) %T>%
+    createTable("worldCupMatches",.) %>%
     return()
 }
   

@@ -1,7 +1,5 @@
 # scripts para geracao de fetaures
 
-.tournaments <- .tables$tournaments
-
 genTournamentFeatures <- function(.tournaments){
   
   # procura por 
