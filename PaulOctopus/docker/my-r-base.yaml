@@ -15,7 +15,7 @@ write_files:
     [Service]
     Environment="HOME=/home/cloudservice"
     ExecStartPre=/usr/share/google/dockercfg_update.sh
-    ExecStart=/usr/bin/docker run --rm -u 2000 --name=mycloudservice gcr.io/project-paul-the-octopus/github-giulsposito-r-x:latest /bin/sleep 3600
+    ExecStart=/usr/bin/docker run --rm -u 2000 --name=mycloudservice gcr.io/google-containers/busybox:latest /bin/sleep 3600
     ExecStop=/usr/bin/docker stop mycloudservice
     ExecStopPost=/usr/bin/docker rm mycloudservice
 
