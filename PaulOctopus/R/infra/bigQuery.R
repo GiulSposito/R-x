@@ -25,11 +25,11 @@ createTable <- function(table.name, table.values, .project=.BQ_PROJ, .dataset=.B
 }
 
 readTable <- function(table.name, .project=.BQ_PROJ, .dataset=.BQ_DATASET){
-  bq.dset  <- bq_dataset(.project, .dataset)
-  bq.table <- bq_table(bq.dset, table.name)
+  bq.dset   <- bq_dataset(.project, .dataset)
+  bq.table  <- bq_table(bq.dset, table.name)
   bq.values <- bq_table_download(bq.table) 
   bq.values <- set_names(bq.values, names(bq.values) %>% gsub("_","\\.",.))
-  return(db.values)
+  return(bq.values)
 }
 
 deleteTable <- function(table.name, .project=.BQ_PROJ, .dataset=.BQ_DATASET){
