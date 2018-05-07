@@ -43,12 +43,13 @@ elo_scrapResults <- function(year){
             away.rating    = away.newRating - away.deltaRating,
             home.rank      = home.newRank + home.deltaRank,
             away.rank      = away.newRank + away.deltaRank,
-            home.atHome    = ifelse(is.na(location),0,as.integer(home.team.cod==location))) %>% View()
+            home.atHome    = ifelse(is.na(location),0,as.integer(home.team.cod==location))) %>%
     return()
 }
 
 
 elo_scrapRank <- function(year) {
+  print(year)
   .elo_getUrl(ELOR$year_start_ratings, year) %>%
     readr::read_tsv(col_names = c("mark","rank","team.cod","rating",
                                   "rank.highest", "rating.highest",
