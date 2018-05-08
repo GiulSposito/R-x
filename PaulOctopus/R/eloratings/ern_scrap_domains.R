@@ -2,7 +2,7 @@
 source("./PaulOctopus/R/eloratings/ern_common.R")
 
 # o 'negativo' que vem no dataset eh um caracter estranho, precisa substituir antes de passar para numero
-.bizzareNegativeChar <- c(0xe2,0x88,0x92) %>% as.raw() %>% rawToChar() # "âˆ’" <- usado como negativo no tsv do elorating.net
+.bizzareNegativeChar <- c(0xe2,0x88,0x92) %>% as.raw() %>% rawToChar() # <- usado como negativo no tsv do elorating.net
 .convertNumber <- function(x) x %>% iconv() %>% gsub(.bizzareNegativeChar,"-",.) %>% as.integer()
 
 elo_scrapTeam <- function(){
@@ -32,9 +32,7 @@ elo_scrapResults <- function(year){
                     "tournament.cod","location",
                     "home.deltaRating", "home.newRating", "away.newRating",
                     "home.deltaRank", "away.deltaRank",
-                    "home.newRank","away.newRank"),
-      quote="",
-      na = "") -> tsv
+                    "home.newRank","away.newRank"), quote="", na = "") -> tsv
   
   tsv %>%
     mutate( match.month = as.integer(match.month),
