@@ -2,7 +2,8 @@
 source("./PaulOctopus/R/eloratings/ern_common.R")
 
 # o 'negativo' que vem no dataset eh um caracter estranho, precisa substituir antes de passar para numero
-.convertNumber <- function(x) x %>% iconv() %>% gsub("�^'","-",.) %>% as.integer()
+.bizzareNegativeChar <- c(0xe2,0x88,0x92) %>% as.raw() %>% rawToChar() # "âˆ’" <- usado como negativo no tsv do elorating.net
+.convertNumber <- function(x) x %>% iconv() %>% gsub(.bizzareNegativeChar,"-",.) %>% as.integer()
 
 elo_scrapTeam <- function(){
   .elo_getUrl(ELOR$teams) %>%
@@ -23,6 +24,7 @@ elo_scrapLabels <- function(){
 }
 
 elo_scrapResults <- function(year){
+  
   .elo_getUrl(ELOR$year_matchs, year) %>%
     readr::read_tsv(
       col_names = c("match.year","match.month","match.day",
@@ -31,10 +33,14 @@ elo_scrapResults <- function(year){
                     "home.deltaRating", "home.newRating", "away.newRating",
                     "home.deltaRank", "away.deltaRank",
                     "home.newRank","away.newRank"),
-      quote="") %>%
-    mutate( match.date  = ymd(paste0(match.year, match.month, match.day)),
-            match.month = as.integer(match.month),
+      quote="",
+      na = "") -> tsv
+  
+  tsv %>%
+    mutate( match.month = as.integer(match.month),
             match.day   = as.integer(match.day),
+            match.day   = ifelse(match.day==0,1,match.day),
+            match.date  = ymd(paste0(match.year,"/", match.month,"/", match.day)),
             location    = ifelse(is.na(location),home.team.cod,location),
             home.deltaRank = .convertNumber(home.deltaRank),
             away.deltaRank = .convertNumber(away.deltaRank),
@@ -43,7 +49,7 @@ elo_scrapResults <- function(year){
             away.rating    = away.newRating - away.deltaRating,
             home.rank      = home.newRank + home.deltaRank,
             away.rank      = away.newRank + away.deltaRank,
-            home.atHome    = ifelse(is.na(location),0,as.integer(home.team.cod==location))) %>%
+            home.atHome    = ifelse(is.na(location),0,as.integer(home.team.cod==location)) ) %>%
     return()
 }
 
