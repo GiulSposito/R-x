@@ -1,5 +1,6 @@
 # import domain
 source("./PaulOctopus/R/infra/bigQuery.R")
+source("./PaulOctopus/R/paul_pipeline/worldCupMatches.R")
 
 loadBigQuery <- function(){
   # import EloRatings Domain
