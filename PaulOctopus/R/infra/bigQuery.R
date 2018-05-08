@@ -1,4 +1,6 @@
 library(bigrquery)
+library(tidyverse)
+library(lubridate)
 
 # use service token
 set_service_token("./PaulOctopus/Project Paul the Octopus-e9ee8f16859c.json")
