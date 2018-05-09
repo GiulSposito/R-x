@@ -2,6 +2,7 @@
 library(zoo)
 library(tidyverse)
 library(lubridate)
+source("./PaulOctopus/R/infra/bigQuery.R")
 
 genTournamentFeatures <- function(.tournaments){
   
@@ -36,9 +37,41 @@ genResultsFeatures <- function(.results){
       away.win    = as.integer(home.score < away.score),
       match.draw  = as.integer(home.score == away.score),
       home.net.score = home.score - away.score,
-      away.net.score = -home.net.score
+      away.net.score = -home.net.score,
+      match.rank.diff   = home.rank - away.rank,
+      match.rating.diff = home.rating - away.rating
     ) %>%
-    arrange(match.date) %>%
+    group_by(home.team.cod) %>%
+    arrange(home.team.cod, match.date) %>%
+    mutate(
+      # saldos de goals
+      home.goals.pro.L1     = as.integer(lag(home.score,k=2, default=0)),
+      home.goals.pro.L2     = as.integer(rollsum(home.goals.pro.L1, k=2, na.pad=T, fill=0, align = "right")),
+      home.goals.pro.L3     = as.integer(rollsum(home.goals.pro.L1, k=3, na.pad=T, fill=0, align = "right")),
+      home.goals.pro.L5     = as.integer(rollsum(home.goals.pro.L1, k=5, na.pad=T, fill=0, align = "right")),
+      home.goals.pro.L10     = as.integer(rollsum(home.goals.pro.L1, k=10, na.pad=T, fill=0, align = "right")),
+      home.goals.pro.L20     = as.integer(rollsum(home.goals.pro.L1, k=20, na.pad=T, fill=0, align = "right")),
+      home.goals.against.L1 = as.integer(lag(away.score,k=2, default=0)),
+      home.goals.against.L2 = as.integer(rollsum(home.goals.against.L1, k=2, na.pad=T, fill=0, align = "right")),
+      home.goals.against.L3 = as.integer(rollsum(home.goals.against.L1, k=3, na.pad=T, fill=0, align = "right")),
+      home.goals.against.L5 = as.integer(rollsum(home.goals.against.L1, k=5, na.pad=T, fill=0, align = "right")),
+      home.goals.against.L10 = as.integer(rollsum(home.goals.against.L1, k=10, na.pad=T, fill=0, align = "right")),
+      home.goals.against.L20 = as.integer(rollsum(home.goals.against.L1, k=20, na.pad=T, fill=0, align = "right"))
+    ) %>%
+    filter(home.team.cod %in% c("BR","GR")) %>%
+    select(match.date, home.team.cod, match.score, away.team.cod, 
+           home.goals.pro.L1, home.goals.against.L1,
+           home.goals.pro.L2, home.goals.against.L2,
+           home.goals.pro.L3, home.goals.against.L3,
+           home.goals.pro.L5, home.goals.against.L5,
+           home.goals.pro.L10, home.goals.against.L10,
+           home.goals.pro.L20, home.goals.against.L20) %>% View()
+    
+  
+hs <- .results$home.score %>% head(10)
+
+  
+  
     select(match.date, 
            home.newRank, home.deltaRank, home.rank, 
            home.newRating, home.deltaRating, home.rating, 
