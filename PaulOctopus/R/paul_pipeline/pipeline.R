@@ -44,9 +44,19 @@ genFeatures <- function(){
 
 
 simpleTest <- function(){
-  game.stats <- genFeatures()
+  
+  
+  match.stats <- genFeatures()
   team.stats <- genTeamStats(readTable("results"))
-  # worldCupGames <- readTable("worldCupMatches")
+
+  lvl.tc <- team.stats$team %>% unique() %>% as.factor() %>% levels()
+  lvl.sc <- game.stats$match.score %>% unique() %>% make.names() %>% as.factor() %>% levels()
+  
+  match.stats %>%
+    mutate( home.team = factor(home.team, levels=lvl.tc),
+            away.team = factor(away.team, levels=lvl.tc), 
+            match.score = match.score %>% make.names() %>% factor(levels = lvl.sc)
+            ) -> game.stats
   
   wc2014 <- game.stats %>%
     filter(tournament.cod=="WC", year(match.date)==2014)
@@ -54,13 +64,13 @@ simpleTest <- function(){
   games.train <- game.stats %>%
     filter( year(match.date)>=2007,
             match.date < min(wc2014$match.date) ) %>%
-    select( -home.team, -away.team, -match.date )
+    select( -match.date )
   
-  games.train.y <- games.train$match.score
   games.train.x <- games.train %>% select(-match.score)
+  games.train.y <- games.train$match.score
   
-  games.test.x <- wc2014 %>% select( -home.team, -away.team, -match.date, -match.score )
-  games.test.y <- wc2014 %>% select( match.score )
+  games.test.x <- wc2014 %>% select(  -match.date, -match.score )
+  games.test.y <- wc2014$match.score
   
   library(caret)
   library(catboost)
@@ -85,15 +95,15 @@ simpleTest <- function(){
   importance <- varImp(report, scale = FALSE)
   print(importance)
   
-  y_hat.prob <- predict(report, games.test.x,  type = "raw")
+  y_hat.prob <- predict(report, games.test.x,  type = "prob")
   
   make.names(games.test.y$match.score)
   y_hat.prob
 
   lvl <- levels(make.names(games.train.y))
     
-  confusionMatrix(factor(y_hat.prob, levels = lvl), factor(make.names(games.test.y$match.score), levels=lvl))
+  confusionMatrix(y_hat.prob,games.test.y)
   
-  View(data.frame(pred=y_hat.prob, ref=make.names(games.test.y$match.score)))
+  View(data.frame(pred=y_hat.prob, ref=games.test.y))
   
 }
