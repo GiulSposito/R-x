@@ -50,7 +50,7 @@ simpleTest <- function(){
   team.stats <- genTeamStats(readTable("results"))
 
   lvl.tc <- team.stats$team %>% unique() %>% as.factor() %>% levels()
-  lvl.sc <- game.stats$match.score %>% unique() %>% make.names() %>% as.factor() %>% levels()
+  lvl.sc <- match.stats$match.score %>% unique() %>% make.names() %>% as.factor() %>% levels()
   
   match.stats %>%
     mutate( home.team = factor(home.team, levels=lvl.tc),
@@ -58,12 +58,17 @@ simpleTest <- function(){
             match.score = match.score %>% make.names() %>% factor(levels = lvl.sc)
             ) -> game.stats
   
+  # remove label dos times
+  game.stats %>%
+    select( -home.team, -away.team ) -> game.stats
+  
   wc2014 <- game.stats %>%
     filter(tournament.cod=="WC", year(match.date)==2014)
   
   games.train <- game.stats %>%
     filter( year(match.date)>=2007,
-            match.date < min(wc2014$match.date) ) %>%
+            match.date < min(wc2014$match.date),
+            tournament.importance >=4 ) %>%
     select( -match.date )
   
   games.train.x <- games.train %>% select(-match.score)
@@ -76,12 +81,12 @@ simpleTest <- function(){
   library(catboost)
   
   fit_control <- trainControl(method = "cv",
-                              number = 4,
+                              number = 2,
                               classProbs = TRUE)
   
-  grid <- expand.grid(depth = c(4, 6, 8),
+  grid <- expand.grid(depth = c(6,8),
                       learning_rate = 0.1,
-                      iterations = 20,
+                      iterations = 100,
                       l2_leaf_reg = 1e-3,
                       rsm = 0.95,
                       border_count = 64)
@@ -96,14 +101,14 @@ simpleTest <- function(){
   print(importance)
   
   y_hat.prob <- predict(report, games.test.x,  type = "prob")
+  y_hat <- predict(report, games.test.x,  type = "raw")
   
-  make.names(games.test.y$match.score)
-  y_hat.prob
-
-  lvl <- levels(make.names(games.train.y))
+  confusionMatrix(y_hat,games.test.y)
+  
+  result <- tibble(pred=as.character(y_hat), ref=as.character(games.test.y)) %>%
+    mutate( result= (pred==ref) )
+  
+  mean(result$result)
     
-  confusionMatrix(y_hat.prob,games.test.y)
-  
-  View(data.frame(pred=y_hat.prob, ref=games.test.y))
   
 }

@@ -24,6 +24,7 @@ elo_scrapLabels <- function(){
 }
 
 elo_scrapResults <- function(year){
+  print(paste0("Import results from ", year))
   
   .elo_getUrl(ELOR$year_matchs, year) %>%
     readr::read_tsv(
