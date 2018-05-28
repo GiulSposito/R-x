@@ -3,9 +3,9 @@ library(markovchain)
 # transition matrix
 # i -> j
 # row sum must be 1
-tmA <- matrix(c(0,0.5,0.5,
-                0.5,0,0.5,
-                0.5,0.5,0), nrow=3, byrow=T)
+tmA <- matrix(c(0,0.4,0.6,
+                0.4,0.4,0.2,
+                0,0,1), nrow=3, byrow=T)
 
 # create the DTMC
 dtmcA <- new("markovchain", 
@@ -33,8 +33,20 @@ finalState
 # steadyState (equilibrium)
 steadyStates(dtmcA)
 
+# conversoins
+as(dtmcA, "data.frame")
+as(dtmcA, "igraph")
+
 # resumo
 summary(dtmcA)
+
+# state types
+absorbingStates(dtmcA)
+transientStates(dtmcA)
+conditionalDistribution(dtmcA,"a")
+canonicForm(dtmcA)
+recurrentClasses(dtmcA)
+communicatingClasses(dtmcA)
 
 # estimating the transition probabilities
 data(rain)
