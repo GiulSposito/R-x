@@ -66,9 +66,9 @@ simpleTest <- function(){
     filter(tournament.cod=="WC", year(match.date)==2014)
   
   games.train <- game.stats %>%
-    filter( year(match.date)>=2007,
+    filter( #year(match.date)>=2000,
             match.date < min(wc2014$match.date),
-            tournament.importance >=4 ) %>%
+            tournament.importance >=5 ) %>%
     select( -match.date )
   
   games.train.x <- games.train %>% select(-match.score)
@@ -84,14 +84,14 @@ simpleTest <- function(){
                               number = 2,
                               classProbs = TRUE)
   
-  grid <- expand.grid(depth = c(6,8),
+  grid <- expand.grid(depth = 6,
                       learning_rate = 0.1,
                       iterations = 100,
                       l2_leaf_reg = 1e-3,
                       rsm = 0.95,
                       border_count = 64)
   
-  report <- train(games.train.x, as.factor(make.names(games.train.y)),
+  report <- train(games.train.x, games.train.y,
                   method = catboost.caret,
                   logging_level = 'Verbose', preProc = NULL,
                   tuneGrid = grid, trControl = fit_control)
