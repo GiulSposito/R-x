@@ -105,7 +105,7 @@ genTeamStats <- function(.results){
     arrange(date) %>%
     # remove campos que sao estatisticas do jogo corrente
     select( -score.pro, -score.agst, -win, -draw, -defeat,
-            -delta.rank, -delta.rating, -atHome ) %>%
+            -delta.rank, -delta.rating ) %>%
     return()
 }
   
