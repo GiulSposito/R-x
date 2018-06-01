@@ -44,15 +44,19 @@ genFeatures <- function(){
 
 
 simpleTest <- function(){
-  
-  
+
   match.stats <- genFeatures()
   team.stats <- genTeamStats(readTable("results"))
 
-  lvl.tc <- team.stats$team %>% unique() %>% as.factor() %>% levels()
-  lvl.sc <- match.stats$match.score %>% unique() %>% make.names() %>% as.factor() %>% levels()
-  
   match.stats %>%
+    filter( year(match.date) <= 2014,
+            tournament.importance >=4, 
+            home.atHome == 0 ) -> matchstats
+  
+  lvl.tc <- team.stats$team %>% unique() %>% as.factor() %>% levels()
+  lvl.sc <- matchstats$match.score %>% unique() %>% make.names() %>% as.factor() %>% levels()
+  
+  matchstats %>%
     mutate( home.team = factor(home.team, levels=lvl.tc),
             away.team = factor(away.team, levels=lvl.tc), 
             match.score = match.score %>% make.names() %>% factor(levels = lvl.sc)
@@ -66,9 +70,7 @@ simpleTest <- function(){
     filter(tournament.cod=="WC", year(match.date)==2014)
   
   games.train <- game.stats %>%
-    filter( #year(match.date)>=2000,
-            match.date < min(wc2014$match.date),
-            tournament.importance >=5 ) %>%
+    filter( match.date < min(wc2014$match.date) ) %>%
     select( -match.date )
   
   games.train.x <- games.train %>% select(-match.score)
