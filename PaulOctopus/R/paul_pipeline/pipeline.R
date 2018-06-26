@@ -49,9 +49,7 @@ simpleTest <- function(){
   team.stats <- genTeamStats(readTable("results"))
 
   match.stats %>%
-    filter( year(match.date) <= 2014,
-            tournament.importance >=4, 
-            home.atHome == 0 ) -> matchstats
+    filter(tournament.importance >=4) -> matchstats
   
   lvl.tc <- team.stats$team %>% unique() %>% as.factor() %>% levels()
   lvl.sc <- matchstats$match.score %>% unique() %>% make.names() %>% as.factor() %>% levels()
@@ -61,10 +59,6 @@ simpleTest <- function(){
             away.team = factor(away.team, levels=lvl.tc), 
             match.score = match.score %>% make.names() %>% factor(levels = lvl.sc)
             ) -> game.stats
-  
-  # remove label dos times
-  game.stats %>%
-    select( -home.team, -away.team ) -> game.stats
   
   wc2014 <- game.stats %>%
     filter(tournament.cod=="WC", year(match.date)==2014)
@@ -83,7 +77,7 @@ simpleTest <- function(){
   library(catboost)
   
   fit_control <- trainControl(method = "cv",
-                              number = 2,
+                              number = 4,
                               classProbs = TRUE)
   
   grid <- expand.grid(depth = 6,
