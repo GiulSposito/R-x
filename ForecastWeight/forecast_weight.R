@@ -3,6 +3,8 @@ library(tidyverse)
 library(tsibble)
 library(mice)
 library(lubridate)
+library(tibbletime)
+library(forecast)
 
 # download data from google spreadsheets
 gs_auth()
@@ -51,3 +53,35 @@ measures_completed %>%
   tidyr::gather(type,weight,-date) %>%
   ggplot() + geom_point(aes(date,weight,color=type))
 
+
+# smothing the measuring using moving average (7 days)
+mean_roll_7 <- rollify(mean,7)
+
+# see the smoothing
+measures_completed %>%
+  mutate( mean_roll_7 = mean_roll_7(weight) ) %>%
+  tidyr::gather(type,weight,-date) %>%
+  ggplot() + geom_line(aes(date,weight,color=type))
+  
+# models the time series
+model <- measures_completed %>%
+  pull(weight) %>%
+  as.ts() %>%
+  auto.arima()
+
+prediction <- model %>%
+  forecast(h=30) %>%
+  as.tibble() %>%
+  mutate( date = max(measures_completed$date) + 1:30 ) 
+
+prediction %>%
+  rename( weight = `Point Forecast`) %>%
+  bind_rows(measures_completed) %>%
+  ggplot(aes(x=date)) + geom_line(aes(date,weight)) +
+  geom_ribbon(aes(ymin=`Lo 80`, ymax=`Hi 80`), alpha=0.2) +
+  geom_ribbon(aes(ymin=`Lo 95`, ymax=`Hi 95`), alpha=0.2) +
+  geom_point(x=ymd(20180625), y=87)
+
+?geom_ribbon
+  
+  bind_rows()
