@@ -1,0 +1,43 @@
+---
+title: "Prevendo o meu peso usando Forecast"
+output: html_notebook
+---
+
+```{r importingData}
+
+library(googlesheets)
+library(tidyverse)
+
+gs_key("1P1q58DYs4Jy5cXKXCrdl11ru4Rop1Mu7r8fXEraCX9M") %>%
+  gs_read_csv(ws=1) %>%
+  select(1:2) %>%
+  mutate(Peso=Peso/10) %>%
+  set_names(c("date","weight")) -> measures
+
+head(measures)
+
+```
+
+```{r fillingNA}
+library(tsibble)
+
+measures %>%
+  as_tsibble() %>%
+  fill_na() -> measures
+
+head(measures,20)
+
+```
+
+```{r completing_data}
+
+library(mice)
+
+measures %>%
+  mice(method = "pmm") %>%
+  mice::complete("long") -> measures_c
+
+head(measures_c,20)
+
+```
+
