@@ -21,10 +21,10 @@ measures <- raw_data %>%
 head(measures, 20)
 
 weight.target <- measures %>%
-  filter( date > ymd(20180601) )
+  filter( date >= ymd(20180601) )
 
 measures <- measures %>%
-  filter( date <= ymd(20180601) )
+  filter( date < ymd(20180601) )
 
 # explicit NA
 
@@ -84,6 +84,18 @@ prediction %>%
   geom_ribbon(aes(ymin=`Lo 95`, ymax=`Hi 95`), alpha=0.2) +
   geom_point(x=ymd(20180625), y=87)
 
+
+prediction %>%
+  rename( weight = `Point Forecast`) %>%
+  mutate( origin = "prediction" ) %>%
+  bind_rows( measures_completed %>% mutate(origin="measures") ) %>%
+  #bind_rows( weight.target %>% mutate(origin="target") ) %>%
+  ggplot(aes(x=date)) +
+  geom_point(aes(y=weight,color=origin)) + 
+  geom_ribbon(aes(ymin=`Lo 80`, ymax=`Hi 80`), alpha=0.2) +
+  geom_ribbon(aes(ymin=`Lo 95`, ymax=`Hi 95`), alpha=0.2) +
+  geom_point(data=weight.target, mapping = aes(date, weight))
+
 # trying the facebook's prophet
 
 # by definition we need to pass a df with 2 columns "ds" (datestamp) and "y" (target var)
@@ -92,18 +104,22 @@ measures_completed %>%
   prophet() -> pmodel
 
 pmodel %>%
-  make_future_dataframe(30) %>%
+  make_future_dataframe(60) %>%
   predict(pmodel,.) -> pprediction
 
 plot(pmodel,pprediction)
 
 pprediction %>%
+  as.tibble() %>%
+  mutate(ds=as_date(ds)) %>%
   select(ds, trend, yhat, yhat_lower, yhat_upper) %>%
-  ggplot() +
+  ggplot() + 
   geom_line(aes(x=ds, y=yhat)) +
   geom_ribbon(aes(x=ds, ymin=yhat_lower, ymax=yhat_upper), alpha=0.2) +
-  geom_point(x=ymd(20180625), y=87, size=5, color="black", alpha=0.5)
-  
+  geom_point(data=measures_completed, aes(x=date, y=weight), color="blue") +
+  geom_point(data=weight.target, mapping=aes(x=date, y=weight), color="red")
+
+str(pprediction)
 
 
 
