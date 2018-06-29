@@ -69,11 +69,13 @@ model <- measures_completed %>%
   as.ts() %>%
   auto.arima()
 
+# make de predicion for 30 days
 prediction <- model %>%
   forecast(h=30) %>%
   as.tibble() %>%
   mutate( date = max(measures_completed$date) + 1:30 ) 
 
+# plot it
 prediction %>%
   rename( weight = `Point Forecast`) %>%
   bind_rows(measures_completed) %>%
@@ -82,6 +84,30 @@ prediction %>%
   geom_ribbon(aes(ymin=`Lo 95`, ymax=`Hi 95`), alpha=0.2) +
   geom_point(x=ymd(20180625), y=87)
 
-?geom_ribbon
+# trying the facebook's prophet
+
+# by definition we need to pass a df with 2 columns "ds" (datestamp) and "y" (target var)
+measures_completed %>%
+  set_names(c("ds","y")) %>%
+  prophet() -> pmodel
+
+pmodel %>%
+  make_future_dataframe(30) %>%
+  predict(pmodel,.) -> pprediction
+
+plot(pmodel,pprediction)
+
+pprediction %>%
+  select(ds, trend, yhat, yhat_lower, yhat_upper) %>%
+  ggplot() +
+  geom_line(aes(x=ds, y=yhat)) +
+  geom_ribbon(aes(x=ds, ymin=yhat_lower, ymax=yhat_upper), alpha=0.2) +
+  geom_point(x=ymd(20180625), y=87, size=5, color="black", alpha=0.5)
   
-  bind_rows()
+
+
+
+View(pprediction)
+
+prophet_plot_components(pmodel, pprediction)
+
