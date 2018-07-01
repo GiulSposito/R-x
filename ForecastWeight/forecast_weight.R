@@ -84,7 +84,6 @@ prediction %>%
   geom_ribbon(aes(ymin=`Lo 95`, ymax=`Hi 95`), alpha=0.2) +
   geom_point(x=ymd(20180625), y=87)
 
-
 prediction %>%
   rename( weight = `Point Forecast`) %>%
   mutate( origin = "prediction" ) %>%
@@ -94,7 +93,8 @@ prediction %>%
   geom_point(aes(y=weight,color=origin)) + 
   geom_ribbon(aes(ymin=`Lo 80`, ymax=`Hi 80`), alpha=0.2) +
   geom_ribbon(aes(ymin=`Lo 95`, ymax=`Hi 95`), alpha=0.2) +
-  geom_point(data=weight.target, mapping = aes(date, weight))
+  geom_point(data=weight.target, mapping = aes(date, weight)) +
+  theme_bw()
 
 # trying the facebook's prophet
 
@@ -104,7 +104,7 @@ measures_completed %>%
   prophet() -> pmodel
 
 pmodel %>%
-  make_future_dataframe(60) %>%
+  make_future_dataframe(30) %>%
   predict(pmodel,.) -> pprediction
 
 plot(pmodel,pprediction)
@@ -112,18 +112,12 @@ plot(pmodel,pprediction)
 pprediction %>%
   as.tibble() %>%
   mutate(ds=as_date(ds)) %>%
+  filter(ds > max(measures_completed$date) ) %>%
   select(ds, trend, yhat, yhat_lower, yhat_upper) %>%
   ggplot() + 
-  geom_line(aes(x=ds, y=yhat)) +
+  geom_line(aes(x=ds, y=yhat), color="blue") +
   geom_ribbon(aes(x=ds, ymin=yhat_lower, ymax=yhat_upper), alpha=0.2) +
-  geom_point(data=measures_completed, aes(x=date, y=weight), color="blue") +
-  geom_point(data=weight.target, mapping=aes(x=date, y=weight), color="red")
-
-str(pprediction)
-
-
-
-View(pprediction)
-
-prophet_plot_components(pmodel, pprediction)
+  geom_point(data=measures_completed, aes(x=date, y=weight), color="salmon") +
+  geom_point(data=weight.target, mapping=aes(x=date, y=weight), color="black") +
+  theme_bw()
 
