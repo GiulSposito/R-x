@@ -1,43 +1,163 @@
 ---
-title: "Prevendo o meu peso usando Forecast"
-output: html_notebook
+title: "Forecasting my weight using Facebook's Prophet"
+output:
+  html_document:
+    df_print: paged
 ---
 
-```{r importingData}
+In this post, we'll try to forecast my weight using Forecast and Facebook's Prophet packages.
 
-library(googlesheets)
-library(tidyverse)
+<!-- more --> 
 
-gs_key("1P1q58DYs4Jy5cXKXCrdl11ru4Rop1Mu7r8fXEraCX9M") %>%
-  gs_read_csv(ws=1) %>%
-  select(1:2) %>%
-  mutate(Peso=Peso/10) %>%
-  set_names(c("date","weight")) -> measures
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+# setup
+library(knitr)
 
-head(measures)
-
+# default behavior for chunks
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(cache = TRUE)
 ```
 
-```{r fillingNA}
-library(tsibble)
+Recently, in the beggining of march, I went to a Nutritionist who recommended me to start a regime to lost some weight. As a good practice in these situations, short feedback cycles are essential to (re)build good habits, so I start to weigh myself almost daily, and record the values in a spreadsheet to follow my progress.
 
+I kept the record until end of may, when my vaccations started and I travel for three weeks, and now, at end of June, I restart to record my weight again. Between this time, I saw the [Bruno Rodrigue's](https://github.com/b-rodrigues/) [post](http://www.brodrigues.co/blog/2018-06-24-fun_ts/) where he try to forecast his weight using the Forecast package, and I was inspired to do the same, but using my own data, and see how the [Facebook's Prophet](https://facebook.github.io/prophet/) package performs trying to predict my weight in the final of June using the data recorded between March and May.
+
+
+```{r loadingLibs}
+#setup
+
+library(googlesheets) # I keep my records in a google spreadsheet
+
+library(tibbletime)   # We'll use tibble time and mice to fill the gap in the 
+library(mice)         # weighting records
+
+library(tsibble)      # TS Tibble is a 'time aware tibble' to keep time series data   
+
+library(lubridate)    # lubridate to manipulate easly date-time info 
+library(tidyverse)    # tidyr, dplyr and magrittr
+
+library(forecast)     # method one to forecast
+library(prophet)      # method two to forecast
+```
+
+## Loading the dataset and filling the gaps
+
+I weigh myself almost daily (but, in the weekends I'm usually away from home) and keep the weight records in a Google Spreadsheet, so let's get the dataset using the [googlesheets](https://cran.r-project.org/web/packages/googlesheets/googlesheets.pdf) package and fill the gap using [mice](https://cran.r-project.org/web/packages/mice/mice.pdf) package.
+
+```{r loadingData}
+# download data from google spreadsheets
+gs_auth()
+gs_key("1P1q58DYs4Jy5cXKXCrdl11ru4Rop1Mu7r8fXEraCX9M") %>%
+  gs_read_csv(ws=1) -> raw_data
+
+# handles date/weight
+raw_data %>%                # the dataset has record for date, weigth, fat, 
+  select(1:2) %>%           # water, muscle and bones, filtering first two
+  mutate(Peso=Peso/10) %>%  # to make it Kilograms
+  set_names(c("date","weight")) -> measures 
+
+head(measures, 20) %>%
+  kable(align = "c",bootstrap_options = "striped", full_width = F)
+```
+
+We can see there is no data recorded at days 11, 16, 17 and 18 and go on. Also, there is a big gap in June.
+
+```{r juneGap}
+tail(measures) %>%
+  kable()
+```
+
+Let's separate the last two points, in June, from the remaining data, so we'll have something like a "training" and a "test" datasets.
+
+```{r separateTrainTest}
+# taking the June measures as a "test" points
+weight.target <- measures %>%
+  filter( date >= ymd(20180601) )
+
+# and the previous as "training" points to be used in Forecast and Prophet
+measures <- measures %>%
+  filter( date < ymd(20180601) )
+```
+
+Let's make the gaps in the "training" dataset explicit, so we can fill'in them using [mice](). 
+
+```{r explicitingNA}
+# explicit NA
 measures %>%
   as_tsibble() %>%
   fill_na() -> measures
 
-head(measures,20)
-
+head(measures,20) %>%
+  kable()
 ```
 
-```{r completing_data}
+Now, with "NA" explicit in the timeseries we can use [mice].
 
-library(mice)
-
+```{r inputeMissing}
+# complete values
 measures %>%
-  mice(method = "pmm") %>%
-  mice::complete("long") -> measures_c
+  mice(method = "pmm", m=5, maxit = 50, seed=42, printFlag= F) %>% # five imputation for NA
+  mice::complete("long") %>% # fill the NA
+  group_by(date) %>% # average them (5 points for missing data)
+  summarise( weight = mean(weight) ) -> measures_completed
 
-head(measures_c,20)
-
+# compare original data and missing values
+measures_completed %>%
+  inner_join(measures, by="date") %>%   # join with original (with NA) dataset
+  set_names(c("date","inputted","original")) %>%
+  tidyr::gather(type,weight,-date) %>% # pivot-it
+  ggplot() + geom_point(aes(date,weight,color=type))
 ```
 
+Well, the [mice](https://cran.r-project.org/web/packages/mice/mice.pdf) package did a remarkable job, the inputted values (red ones) seems like real measures, now with dataset completed we convert it to a timeseries and use forcast to predict the weight behavior in June.
+
+## Forecasting with Forecast Package
+
+The [Forecast package](https://cran.r-project.org/web/packages/forecast/forecast.pdf) implements ARIMA models for time series data.In statistics and econometrics, and in particular in time series analysis, an autoregressive integrated moving average (ARIMA) model is a generalization of an autoregressive moving average (ARMA) model. Both of these models are fitted to time series data either to better understand the data or to predict future points in the series (forecasting). [(more on ARIMA)](https://en.wikipedia.org/wiki/Autoregressive_integrated_moving_average)
+
+Let's use this model to forecast.
+
+```{r forecastJune}
+
+# models the time series
+model <- measures_completed %>%
+  pull(weight) %>%  # convert to a vector
+  as.ts() %>%       # transform to a Time Serie
+  auto.arima()      # fit the model
+
+# make de predicion for 30 days
+prediction <- model %>%
+  forecast(h=31) %>%  # forecast next 30 measures
+  as.tibble() %>%     # covert to tibble
+  mutate( date = max(measures_completed$date) + 1:31 ) # add the dates
+
+# prediction dataset
+head(prediction) %>%
+  kable()
+
+# plot to compare the prediction with the real values
+prediction %>%
+  rename( weight = `Point Forecast`) %>% # rename the forecast column
+  mutate( origin = "prediction" ) %>%    # mark the data as 'prediction'
+  bind_rows( measures_completed %>% mutate(origin="measures") ) %>% # join with real data
+  ggplot(aes(x=date)) + 
+  geom_point(aes(y=weight,color=origin)) + 
+  geom_ribbon(aes(ymin=`Lo 80`, ymax=`Hi 80`), alpha=0.2) +
+  geom_ribbon(aes(ymin=`Lo 95`, ymax=`Hi 95`), alpha=0.2) +
+  geom_point(data=weight.target, mapping = aes(date, weight)) +
+  theme_bw()
+```
+
+The Forecast package did a "ok" job, the first real measure are in the 80% certainty range and the second in the 95% range, what is, for predictions, a good job. But the model miss the two points, they are at the edge of the certainty interval.
+
+```{r comparingForecast}
+# comparing the real and predicted values
+prediction %>%
+  inner_join(weight.target, by="date") %>%
+  select(date, `Lo 95`,`Lo 80`, forecast=`Point Forecast`, weight, `Hi 80`,`Hi 95`) %>%
+  kable()
+```
+
+Can the Facebook's Prophet do a better job?
