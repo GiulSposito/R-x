@@ -29,17 +29,13 @@ I kept the record until end of may, when my vacations started and I travel for t
 #setup
 
 library(googlesheets) # I keep my records in a google spreadsheet
-
 library(tibbletime)   # We'll use tibble time and mice to fill the gap in the 
 library(mice)         # weighting records
-
 library(tsibble)      # TS Tibble is a 'time aware tibble' to keep time series data   
-
 library(lubridate)    # lubridate to manipulate easly date-time info 
 library(tidyverse)    # tidyr, dplyr and magrittr
-
-library(forecast)     # method one to forecast
-library(prophet)      # method two to forecast
+library(forecast)     # package 'standard' to forecast time series
+library(prophet)      # the 'facebook' method
 ```
 
 ## Loading the dataset and filling the gaps
@@ -49,7 +45,7 @@ I weigh myself almost daily (but, in the weekends I'm usually away from home) an
 ```{r loadingData}
 # download data from google spreadsheets
 gs_auth()
-gs_key("1P1q58DYs4Jy5cXKXCrdl11ru4Rop1Mu7r8fXEraCX9M") %>%
+gs_key("1P1q58DYs4Jy5cXKXCrdl11ru4Rop1Mu7r8fXEraCX9M", verbose = F) %>%
   gs_read_csv(ws=1) -> raw_data
 
 # handles date/weight
