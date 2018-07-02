@@ -20,9 +20,9 @@ knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(cache = TRUE)
 ```
 
-Recently, in the beggining of march, I went to a Nutritionist who recommended me to start a regime to lost some weight. As a good practice in these situations, short feedback cycles are essential to (re)build good habits, so I start to weigh myself almost daily, and record the values in a spreadsheet to follow my progress.
+Recently, in the beginning of march, I went to a Nutritionist who recommended me to start a regime to lost some weight. As a good practice in these situations, short feedback cycles are essential to (re)build good habits, so I start to weigh myself almost daily, and record the values in a spreadsheet to follow my progress.
 
-I kept the record until end of may, when my vaccations started and I travel for three weeks, and now, at end of June, I restart to record my weight again. Between this time, I saw the [Bruno Rodrigue's](https://github.com/b-rodrigues/) [post](http://www.brodrigues.co/blog/2018-06-24-fun_ts/) where he try to forecast his weight using the Forecast package, and I was inspired to do the same, but using my own data, and see how the [Facebook's Prophet](https://facebook.github.io/prophet/) package performs trying to predict my weight in the final of June using the data recorded between March and May.
+I kept the record until end of may, when my vacations started and I travel for three weeks, and now, at end of June, I restart to record my weight again. Between this time, I saw the [Bruno Rodrigue's](https://github.com/b-rodrigues/) [post](http://www.brodrigues.co/blog/2018-06-24-fun_ts/) where he try to forecast his weight using the Forecast package, and I was inspired to do the same, but using my own data, and see how the [Facebook's Prophet](https://facebook.github.io/prophet/) package performs trying to predict my weight in the final of June using the data recorded between March and May.
 
 
 ```{r loadingLibs}
@@ -44,7 +44,7 @@ library(prophet)      # method two to forecast
 
 ## Loading the dataset and filling the gaps
 
-I weigh myself almost daily (but, in the weekends I'm usually away from home) and keep the weight records in a Google Spreadsheet, so let's get the dataset using the [googlesheets](https://cran.r-project.org/web/packages/googlesheets/googlesheets.pdf) package and fill the gap using [mice](https://cran.r-project.org/web/packages/mice/mice.pdf) package.
+I weigh myself almost daily (but, in the weekends I'm usually away from home) and keep the weight records in a Google Spreadsheet, so let's get the data set using the [googlesheets](https://cran.r-project.org/web/packages/googlesheets/googlesheets.pdf) package and fill the gap using [mice](https://cran.r-project.org/web/packages/mice/mice.pdf) package.
 
 ```{r loadingData}
 # download data from google spreadsheets
@@ -69,7 +69,7 @@ tail(measures) %>%
   kable()
 ```
 
-Let's separate the last two points, in June, from the remaining data, so we'll have something like a "training" and a "test" datasets.
+Let's separate the last two points, in June, from the remaining data, so we'll have something like a "training" and a "test" data sets.
 
 ```{r separateTrainTest}
 # taking the June measures as a "test" points
@@ -81,7 +81,7 @@ measures <- measures %>%
   filter( date < ymd(20180601) )
 ```
 
-Let's make the gaps in the "training" dataset explicit, so we can fill'in them using [mice](). 
+Let's make the gaps in the "training" data set explicit, so we can fill'in them using [mice](). 
 
 ```{r explicitingNA}
 # explicit NA
@@ -93,7 +93,7 @@ head(measures,20) %>%
   kable()
 ```
 
-Now, with "NA" explicit in the timeseries we can use [mice].
+Now, with "NA" explicit in the time series we can use [mice].
 
 ```{r inputeMissing}
 # complete values
@@ -111,11 +111,11 @@ measures_completed %>%
   ggplot() + geom_point(aes(date,weight,color=type))
 ```
 
-Well, the [mice](https://cran.r-project.org/web/packages/mice/mice.pdf) package did a remarkable job, the inputted values (red ones) seems like real measures, now with dataset completed we convert it to a timeseries and use forcast to predict the weight behavior in June.
+Well, the [mice](https://cran.r-project.org/web/packages/mice/mice.pdf) package did a remarkable job, the inputted values (red ones) seems like real measures, now with data set completed we convert it to a time series and use forecast to predict the weight behavior in June.
 
 ## Forecasting with Forecast Package
 
-The [Forecast package](https://cran.r-project.org/web/packages/forecast/forecast.pdf) implements ARIMA models for time series data.In statistics and econometrics, and in particular in time series analysis, an autoregressive integrated moving average (ARIMA) model is a generalization of an autoregressive moving average (ARMA) model. Both of these models are fitted to time series data either to better understand the data or to predict future points in the series (forecasting). [(more on ARIMA)](https://en.wikipedia.org/wiki/Autoregressive_integrated_moving_average)
+The [Forecast package](https://cran.r-project.org/web/packages/forecast/forecast.pdf) implements ARIMA models for time series data. In statistics and econometrics, and in particular in time series analysis, an autoregressive integrated moving average (ARIMA) model is a generalization of an autoregressive moving average (ARMA) model. Both of these models are fitted to time series data either to better understand the data or to predict future points in the series (forecasting). [(more on ARIMA)](https://en.wikipedia.org/wiki/Autoregressive_integrated_moving_average)
 
 Let's use this model to forecast.
 
@@ -150,14 +150,75 @@ prediction %>%
   theme_bw()
 ```
 
-The Forecast package did a "ok" job, the first real measure are in the 80% certainty range and the second in the 95% range, what is, for predictions, a good job. But the model miss the two points, they are at the edge of the certainty interval.
+The Forecast package did a "OK" job, the first real measure are in the 80% certainty range and the second in the 95% range, what is, for predictions, a good job. But the model miss the two points, they are at the edge of the certainty interval.
 
 ```{r comparingForecast}
 # comparing the real and predicted values
 prediction %>%
   inner_join(weight.target, by="date") %>%
   select(date, `Lo 95`,`Lo 80`, forecast=`Point Forecast`, weight, `Hi 80`,`Hi 95`) %>%
+  mutate( interval_size = `Hi 95` - `Lo 95` ) %>% 
   kable()
 ```
 
 Can the Facebook's Prophet do a better job?
+
+## Prophet
+
+The [Facebook's Prophet](https://facebook.github.io/prophet/) is a procedure for forecasting time series data based on an additive model where non-linear trends are fit with yearly, weekly, and daily seasonality, plus holiday effects. It works best with time series that have strong seasonal effects and several seasons of historical data. Prophet is robust to missing data and shifts in the trend, and typically handles outliers well.
+
+Facebook implemented the procedure in R and Python and make it public in 2017, the package [Prophet](https://cran.r-project.org/web/packages/prophet/index.html) gives you access to it. If you want to know more about it, check [this](https://towardsdatascience.com/using-open-source-prophet-package-to-make-future-predictions-in-r-ece585b73687).
+
+```{r prophetPred}
+
+# by definition we need to pass a df with 2 columns "ds" (datestamp) and "y" (target var)
+measures_completed %>%
+  set_names(c("ds","y")) %>%
+  prophet() -> pmodel
+
+# we use the model to make the prediction
+pmodel %>%
+  make_future_dataframe(30) %>%
+  predict(pmodel,.) -> pprediction
+
+# what is the output format
+pprediction %>%
+  as.tibble() %>%
+  glimpse()
+```
+
+As you see, the prophet's prediction give us a lot of information, let's check how it performed.
+
+```{r prophetPerform}
+
+#plot the prediction against the target
+pprediction %>%
+  as.tibble() %>%
+  mutate(ds=as_date(ds)) %>%
+  filter(ds > max(measures_completed$date) ) %>%
+  select(ds, trend, yhat, yhat_lower, yhat_upper) %>%
+  ggplot() + 
+  geom_line(aes(x=ds, y=yhat), color="blue") +
+  geom_ribbon(aes(x=ds, ymin=yhat_lower, ymax=yhat_upper), alpha=0.2) +
+  geom_point(data=measures_completed, aes(x=date, y=weight), color="salmon") +
+  geom_point(data=weight.target, mapping=aes(x=date, y=weight), color="black") +
+  theme_bw()
+
+```
+
+Wow, the prophet to an excellent job, the real measures are in the center of the range and the prediction values are close to it.
+
+```{r prophetPerform}
+
+# checking the values in the June measures
+pprediction %>%
+  as.tibble() %>% 
+  mutate(date=as_date(ds)) %>%
+  inner_join(weight.target, by="date") %>%
+  select(date=ds, yhat_lower, yhat, weight, yhat_upper ) %>%
+  mutate( interval_size = yhat_upper - yhat_lower ) %>% 
+  kable()
+
+```
+
+As you saw, the prediction points made by prophet are remarkable close to the real values and also the size of certainty interval is very narrow, almost half forecast´s. The performance of the prophet was great in the test, for sure, the this package deserves another post in the future, to explore other features available.
