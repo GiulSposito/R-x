@@ -4,12 +4,11 @@ library(tidyverse)
 library(lubridate)
 
 # london files
-path <- "C:/Users/gsposito/Pictures/London/"
-files <- dir(path, pattern = ".*08488\\.JPG", full.names = T)
+path <- "C:\\Users\\gsposito\\Pictures\\test_london"
+files <- dir(path, pattern = "*\\.JPG", full.names = T)
 
 # checking date and time in the exif
-exifr::read_exif(files, tags=c("DateTimeOriginal", "CreateDate", "SonyDateTime","ModifyDate")) %>%
-  glimpse()
+metadata <- exifr::read_exif(files)#, tags=c("DateTimeOriginal", "CreateDate", "SonyDateTime","ModifyDate")) 
 
 files <- dir(path, pattern = "DSC[0-9]+\\.JPG$", full.names = T)
 
