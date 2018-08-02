@@ -7,6 +7,6 @@ dtf <- tibble(
 
 dtf %>%
   ggplot(aes(x=factor(attrib),y=eval, fill=factor(attrib))) +
-  geom_col(width=1) + coord_polar() + labs(x="",y="") +
+  geom_col(width=1) + coord_polar() + labs(x="",y="") + ylim(0,10) +
   geom_col(width=1, fill = NA, colour = "white") +
   theme( legend.position="none" )
