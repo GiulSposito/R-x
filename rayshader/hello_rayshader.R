@@ -45,6 +45,15 @@ elmat %>%
   add_shadow(ambient_shade(elmat)) %>%
   plot_map()
 
+# trying 3D plot
+elmat %>%
+  sphere_shade(sunangle = 45, texture = "desert") %>%
+  add_water(detect_water(elmat), color="desert") %>%
+  add_shadow(ray_shade(elmat,sunangle = 45)) %>%
+  add_shadow(ambient_shade(elmat)) %>%
+  plot_3d(elmat/30, solid=T, shadow = T, water=T, wateralpha = 0.5)
+  
+
 #or from the elevatr package
 elevation <- get_elev_raster(lake, z = 11, src = "aws")
 
@@ -63,4 +72,28 @@ volcano %>%
   add_shadow(ambient_shade(volcano)) %>% # add occlusion
   plot_map()
 
+
+data_frame(
+  x = rnorm(100),
+  y = rnorm(100),
+  z = rnorm(100, mean = 20, sd = 10)
+) %>%
+  ggplot(aes(x=x,y=y,z=z)) +
+  geom_point(aes(color=z), show.legend = F) +
+  theme_void()
+
+ggsave("./rayshader/myPlot.png")
+
+eltif <- raster::raster("./rayshader/myPlot.png")
+
+elmat <- matrix(
+  raster::extract(eltif,raster::extent(eltif),buffer=1000),
+  nrow=ncol(eltif),ncol=nrow(eltif))*-1
+
+#And finally, we add an ambient occlusion layer:
+elmat %>%
+  sphere_shade(sunangle = 45, texture = "desert") %>%
+  add_shadow(ray_shade(elmat,sunangle = 45)) %>%
+  add_shadow(ambient_shade(elmat)) %>%
+  plot_3d(elmat, solid=T, shadow = T)
 
