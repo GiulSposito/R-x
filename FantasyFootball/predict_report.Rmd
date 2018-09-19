@@ -1,0 +1,84 @@
+---
+title: "Fantasy Football Analytics"
+subtitle: week 3 - predictions
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+classoption: landscape
+---
+```{r setup, cache=FALSE, echo=FALSE, warning=FALSE, message=FALSE}
+
+library(knitr)
+library(ffanalytics)
+library(ggplot2)
+
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+```
+
+```{r scrap, cache=TRUE, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
+# my_scrap <- scrape_data(src = c("CBS", "ESPN", "FantasyData", "FantasyPros",
+#   "FantasySharks", "FFToday", "FleaFlicker", "NumberFire", "Yahoo",
+#   "FantasyFootballNerd", "NFL", "RTSports", "Walterfootball"), 
+#                         pos = c("QB", "RB", "WR", "TE", "K", "DST"),
+#                         season = 2018, week = 3)
+
+```
+
+```{r analysis, cache=TRUE, echo=FALSE, warning=FALSE, message=FALSE}
+# my_projections <- projections_table(my_scrap)
+# 
+# my_projections <- my_projections %>% 
+#   add_ecr() %>% 
+#   add_risk() %>%  
+#   add_player_info()
+
+my_projections <- readRDS("my_projections.rds")
+```
+
+```{r plotFunction, cache=FALSE, echo=FALSE, warning=FALSE, message=FALSE}
+
+plotPlayers <- function(projs, play_pos, title, week){
+  projs %>% 
+    # inner_join(player_table) %>% 
+    mutate( full_name=paste0(first_name, " ", last_name),
+            tier = as.factor(tier) ) %>% 
+    filter(pos==play_pos, avg_type=="weighted", points>1) %>% 
+    head(32) %>% 
+    ggplot(aes(x=reorder(full_name,points), group=tier)) +
+    geom_pointrange(aes(y=points, ymin=floor, ymax=ceiling, color=tier),size=.8) +
+    theme_light() + xlab(" ") +
+    theme(text=element_text(size=30)) +
+    ggtitle(label = title) +
+    coord_flip()
+}
+```
+
+```{r posQB, echo=FALSE, warning=FALSE, message=FALSE, fig.width=20, fig.height=13}
+plotPlayers(my_projections, "QB", "Quaterbacks", 3)
+```
+vignette("scoring_settings")
+\newpage
+```{r posRB, echo=FALSE, warning=FALSE, message=FALSE, fig.width=20, fig.height=13}
+plotPlayers(my_projections, "RB", "Running backs", 3)
+```
+\pagebreak
+\newpage
+```{r posWR, echo=FALSE, warning=FALSE, message=FALSE, fig.width=20, fig.height=13}
+plotPlayers(my_projections, "WR", "Wide receivers", 3)
+```
+\pagebreak
+\newpage
+```{r posTE, echo=FALSE, warning=FALSE, message=FALSE, fig.width=20, fig.height=13}
+plotPlayers(my_projections, "TE", "Tight ends", 3)
+```
+\pagebreak
+\newpage
+```{r posDST, echo=FALSE, warning=FALSE, message=FALSE, fig.width=20, fig.height=13}
+# plotPlayers(my_projections, "K", "Kickers", 3)
+plotPlayers(my_projections, "DST", "Defenses", 3)
+
+```
+

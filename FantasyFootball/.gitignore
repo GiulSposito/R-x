@@ -1,0 +1,5 @@
+*.rds
+*.html
+*.pdf
+predict_report_cache
+predict_report_files

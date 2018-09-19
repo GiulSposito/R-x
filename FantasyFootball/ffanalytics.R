@@ -24,7 +24,7 @@ my_projections %>%
   inner_join(player_table) %>% 
   mutate( full_name=paste0(first_name, " ", last_name),
           tier = as.factor(tier) ) %>% 
-  filter(pos=="DST", avg_type=="robust", points>1) %>% 
+  filter(pos=="DST", avg_type=="weighted", points>1) %>% 
   head(32) %>% 
   ggplot(aes(x=reorder(full_name,points), group=tier)) +
   geom_pointrange(aes(y=points, ymin=floor, ymax=ceiling, color=tier)) +
