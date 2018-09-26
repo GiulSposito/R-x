@@ -3,3 +3,6 @@
 *.pdf
 predict_report_cache
 predict_report_files
+projection_report_cache
+projection_report_files
+rsconnect
