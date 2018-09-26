@@ -1,0 +1,111 @@
+---
+title: "It's Football, dudes - Fantasy League"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(ffanalytics)
+```
+
+```{r loaddata, cache=TRUE}
+
+source("score_settings.R")
+my_scrap <- readRDS("weekly_scrap.rds")$week4
+
+my_projections <- projections_table(my_scrap, scoring_rules = dudes.score.settings) %>% 
+  filter(avg_type=="weighted") %>% 
+  add_player_info() %>% 
+  mutate( full_name = paste0(first_name, " ", last_name),
+          tier = as.factor(tier) ) %>%
+  group_by( id ) %>% 
+  mutate( r_pos = max(ceiling, points) ) %>% 
+  ungroup() %>% 
+  filter( !(team %in% c("FA","FA*")) )
+
+my_stats <- ffanalytics::aggregate_stats(my_scrap)  %>% 
+  filter(avg_type=="weighted") %>% 
+  add_player_info() %>% 
+  mutate( full_name = paste0(first_name, " ", last_name) ) %>%
+  filter( !(team %in% c("FA","FA*")) )
+  
+```
+
+QB 
+========================
+
+```{r qb}
+
+plotProjections <- function(.proj, .pos, .title, .subtitle) {
+  require(magrittr)
+  proj_data <- .proj %>% 
+    filter(position==.pos) %>% 
+    arrange(pos_rank) %>% 
+    head(30)
+  
+  nu_y <- max(proj_data$ceiling, na.rm = T) / 21
+  
+  proj_data %>% 
+    ggplot(aes(group=tier)) +
+      geom_pointrange(aes(x=reorder(pos_rank,desc(pos_rank)),
+                      y=points, 
+                      ymin=floor, 
+                      ymax=ceiling, 
+                      color=tier)) +
+      geom_text(aes(x=reorder(pos_rank,desc(pos_rank)), 
+                y=r_pos, 
+                color=tier, 
+                label=last_name), nudge_y = nu_y, nudge_x = 0.1, size=2.5) +
+      theme_classic() + xlab("Rank") + ylab("Points") +
+      theme( panel.grid.major.x=element_line(colour="#EEEEEE"),
+         legend.position="none" ) +
+      scale_x_discrete(breaks = seq(1,32,4) ) +
+      ggtitle(.title,.subtitle) +
+      coord_flip()
+  
+}
+
+plotProjections(my_projections, "QB", "Quaterbacks", "week 4")
+
+```
+
+WR
+========================
+
+```{r wr}
+
+plotProjections(my_projections, "WR", "Wide Receivers", "week 4")
+
+```
+
+RB
+========================
+
+```{r rb}
+
+plotProjections(my_projections, "RB", "Running Backs", "week 4")
+
+```
+
+TE
+========================
+
+```{r te}
+
+plotProjections(my_projections, "TE", "Tight Ends", "week 4")
+
+```
+
+DEF
+========================
+
+```{r def}
+
+plotProjections(my_projections, "DST", "Defenses", "week 4")
+
+```
+
+
