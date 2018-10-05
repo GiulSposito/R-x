@@ -1,10 +1,10 @@
 ---
 title: "Fantasy Football Analytics"
-subtitle: week 3 - predictions
+subtitle: "week 4 - predictions"
 output:
-  pdf_document: default
   html_document:
     df_print: paged
+  pdf_document: default
 classoption: landscape
 ---
 ```{r setup, cache=FALSE, echo=FALSE, warning=FALSE, message=FALSE}
