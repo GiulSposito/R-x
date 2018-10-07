@@ -7,3 +7,4 @@ projection_report_cache
 projection_report_files
 rsconnect
 *.png
+config.yml
