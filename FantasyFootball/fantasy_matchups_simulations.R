@@ -35,6 +35,8 @@ matchup.teams.json <- matchups$awayTeam.id %>%
   },
   .url=url.team.matchup)
 
+saveRDS(matchup.teams.json, "./FantasyFootball/week6_matchups_json.rds")
+
 # funcao para extrar dados dos hosters dos times
 extractTeam <- . %>% 
   .$players %>% 
@@ -113,3 +115,71 @@ scrap$K %>%
   group_by(id, pos) %>% 
   nest(.key="points.range") -> players.points.projections
 
+
+addProjPoints <- function(.roster, .id_map, .pts_proj){
+  .id_map %>%
+    select(id, src_id, team ) %>% 
+    inner_join(.roster, by="src_id") %>% 
+    inner_join(.pts_proj, by = "id") %>% 
+    select(-pos,-src_id)
+}
+
+# coloca os pontos de projecao junto aos times dos rosters
+matchups.rosters.proj <- matchups.rosters %>% 
+  mutate( 
+    home.roster = map(
+      home.roster,
+      addProjPoints,
+      .id_map   = player_ids,
+      .pts_proj = players.points.projections),
+    away.roster = map(
+      away.roster,
+      addProjPoints,
+      .id_map   = player_ids,
+      .pts_proj = players.points.projections)
+    )
+
+# sorteia uma das pontuacoes projetadas
+simPoints <- function(team_table){
+  team_table %>% 
+    filter( rosterSlot != "BN" ) %>% 
+    pull(points.range) %>% 
+    map(function(pt.rng){
+      i <- sample(1:nrow(pt.rng),1)
+      return(pt.rng[i,]$points)
+    }) %>% 
+    unlist() %>% 
+    sum(na.rm = T) %>% 
+    return()
+}
+
+# repete o sorteio .n vezes
+repSimulation <- function(.team, .n){
+  sims <- vector("numeric",.n)
+  for(i in 1:.n) sims[i] <- simPoints(.team)
+  return(sims)
+}
+
+# numero de simulacoes
+n.sim <- 2000
+
+# retorna um summary como um data.frame
+summaryAsTibble <- . %>% summary() %>% as.list() %>% as.tibble()
+
+# incorpora a simulacao e calcula resultados
+matchups.rosters.proj %>% 
+  mutate(
+    home.sim = map(home.roster, repSimulation, .n=n.sim),
+    away.sim = map(away.roster, repSimulation, .n=n.sim),
+    home.win = map2(home.sim, away.sim, function(h.scr, a.scr) (h.scr > a.scr)),
+    away.win = map(home.win, function(.x) !.x),
+    home.win.prob = map(home.win, function(.x) mean(.x) ),
+    away.win.prob = map(away.win, function(.x) mean(.x))
+  )  %>%  
+  mutate(
+    home.points = map(home.sim, summaryAsTibble),
+    away.points = map(away.sim, summaryAsTibble)
+  ) -> matchups.simulation
+
+# salva dados da simulacao
+saveRDS(matchups.simulation, "./FantasyFootball/week6_simulation.rds")
