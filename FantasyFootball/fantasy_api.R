@@ -20,7 +20,7 @@ resp$status_code
 httr::content(resp, as = "text") %>% 
   jsonlite::fromJSON(simplifyDataFrame = T) -> matchup
 
-matchup[[1]]$matchup$awayTeam$players[[1]] %>% 
+matchup[[1]]$matchup$homeTeam$players[[1]] %>%
   select( src_id=id, name, position, rosterSlot, fantasyPts ) %>%
   jsonlite::flatten() %>% 
   select(-fantasyPts.week.season, -fantasyPts.week.week ) %>% 
