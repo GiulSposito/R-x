@@ -1,0 +1,158 @@
+---
+title: "Dudes Football League - Week 6 - Simulation"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(plotly)
+library(formattable)
+
+sim <- readRDS("week6_simulation.rds") 
+
+sim.summary <- tibble(
+  team.id   = c(sim$home.teamId,   sim$away.teamId),
+  team.name = c(sim$home.name,     sim$away.name),
+  pts.summ  = c(sim$home.points,   sim$away.points),
+  points    = c(sim$home.sim,      sim$away.sim),
+  win.pc    = c(sim$home.win.prob, sim$away.win.prob)
+) %>% unnest(win.pc) #bug
+
+
+winGauge <- function(.teamId, .teamSummary) {
+  .teamSummary %>% 
+    filter(team.id == .teamId) %>% 
+    mutate( win.pc = round(100*win.pc) ) %>% 
+    pull(win.pc) %>%
+    gauge(min = 0, max = 100, symbol = '%', gaugeSectors(success = c(61, 100), warning = c(40, 60), danger = c(0, 39))) 
+} 
+
+
+```
+
+Win Probability {data-navmenu="Overview"}
+=======================
+
+Row
+------------------
+
+### Amparo Bikers
+```{r}
+winGauge(4,sim.summary)
+```
+
+### Campinas Giants
+```{r}
+winGauge(11,sim.summary)
+```
+
+### Change Robots         
+```{r}
+winGauge(1,sim.summary)
+```
+
+### Indaiatuba Riders
+```{r}
+winGauge(3,sim.summary)
+```
+
+Row
+------------------
+
+### NJ's Bugre
+```{r}
+winGauge(7,sim.summary)
+```
+
+### Rio Claro Pfeiferians
+```{r}
+winGauge(6,sim.summary)
+```
+
+### Sorocaba Steelers
+```{r}
+winGauge(5,sim.summary)
+```
+
+### Sorocaba Wild Mules 
+```{r}
+winGauge(2,sim.summary)
+```
+
+Week Matchups {data-navmenu="Overview"}
+======================
+
+```{r}
+sim %>%
+  unnest(home.win.prob, away.win.prob) %>% 
+  unnest(home.points, away.points, .sep = ".") %>% 
+  rename(home.points = home.points.Median,
+         away.points = away.points.Median) %>% 
+  mutate( home.win.prob = round(home.win.prob,2),
+          away.win.prob = round(away.win.prob,2),
+          home.points   = round(home.points,1),
+          away.points   = round(away.points,1)) %>% 
+  select(home.name, home.win.prob, home.points, away.points, away.win.prob, away.name) %>% 
+  formattable(list(
+    area(col=c(home.win.prob, away.win.prob)) ~ color_tile("pink","lightgreen"),
+    area(col=c(home.points, away.points)) ~ normalize_bar("palegoldenrod", 0.2)
+  ))
+```
+
+Points Distribution {data-navmenu="Overview"}
+=======================================
+
+```{r}
+
+sim.summary %>% 
+  select( team.name, points ) %>% 
+  unnest(points) %>% 
+  mutate(points = round(points,1)) %>% 
+  plot_ly(x=~team.name, y=~points, type = "box", color=~team.name)  
+
+```
+
+Points Table {data-navmenu="Overview"}
+============================================
+
+```{r}
+
+sim.summary %>% 
+  select(team.name, points=pts.summ) %>% 
+  unnest(points, .sep = ".") %>% 
+  mutate_if(is.numeric, function(v) round(v,1)) %>% 
+  arrange(-points.Median) %>% 
+  formattable(list(
+    area(col=2:7) ~ normalize_bar("gold", 0.2)
+  ))
+
+```
+
+
+
+
+Roster Comparation  {data-orientation=columns}
+================
+
+
+Column
+-----------------------------------------------------------------------
+
+### Chart A
+
+```{r}
+
+```
+
+Column
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+
+```
