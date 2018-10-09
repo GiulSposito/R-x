@@ -1,6 +1,8 @@
+library(tidyverse)
 library(yaml)
 library(httr)
 library(jsonlite)
+library(glue)
 
 # lendo liga e token do yaml (para não versionar o access token)
 config <- yaml.load_file("./FantasyFootball/config.yml")
@@ -8,15 +10,17 @@ leagueId <- config$leagueId
 authToken <- config$authToken
 
 # contexto da semana
-week <- 6
+week <- 5
 
 # obtem os matchups
 url.matchups <- "http://api.fantasy.nfl.com/v1/league/matchups?leagueId={leagueId}&week={week}&authToken={authToken}&format=json"
 
 # faz a chamada na api
-matchups.json <- httr::GET(glue(url.matchups)) %>% 
-  httr::content(resp, as="text") %>%
-  fromJSON(simplifyDataFrame = T)
+httr::GET(glue(url.matchups)) -> resp
+
+resp %>% 
+  httr::content(as="text") %>%
+  fromJSON(simplifyDataFrame = T) -> matchups.json
 
 # processa o json
 matchups <- matchups.json$leagues$matchups[[1]] %>% 
@@ -29,7 +33,7 @@ url.team.matchup <- "http://api.fantasy.nfl.com/v1/league/team/matchup?leagueId=
 matchup.teams.json <- matchups$awayTeam.id %>% 
   map(function(teamId, .url){
     httr::GET(glue(.url)) %>% 
-      httr::content(resp, as = "text") %>% 
+      httr::content(as = "text") %>% 
       jsonlite::fromJSON(simplifyDataFrame = T) %>% 
       return()
   },
@@ -72,7 +76,7 @@ source("FantasyFootball/score_settings.R")
 # scrap todas as fontes, nas posicoes da liga
 scrap <- scrape_data(pos = c("QB", "RB", "WR", "TE", "K", "DST"),
                      season = 2018, 
-                     week = 6)
+                     week = 5)
 
 saveRDS(scrap, "./FantasyFootball/week6_scrap.rds")
 
@@ -182,4 +186,4 @@ matchups.rosters.proj %>%
   ) -> matchups.simulation
 
 # salva dados da simulacao
-saveRDS(matchups.simulation, "./FantasyFootball/week6_simulation.rds")
+saveRDS(matchups.simulation, "./FantasyFootball/week5_simulation.rds")

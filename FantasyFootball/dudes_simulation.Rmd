@@ -1,5 +1,5 @@
 ---
-title: "Dudes Football League - Week 6 - Simulation"
+title: "Dudes Football League - Week 5 - Simulation"
 output: 
   flexdashboard::flex_dashboard:
     orientation: rows
@@ -12,7 +12,7 @@ library(tidyverse)
 library(plotly)
 library(formattable)
 
-sim <- readRDS("week6_simulation.rds") 
+sim <- readRDS("week5_simulation.rds") 
 
 sim.summary <- tibble(
   team.id   = c(sim$home.teamId,   sim$away.teamId),
