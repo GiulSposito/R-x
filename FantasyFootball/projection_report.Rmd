@@ -11,7 +11,7 @@ library(flexdashboard)
 library(ffanalytics)
 ```
 
-```{r loaddata, cache=TRUE}
+```{r loaddata, cache=FALSE}
 
 source("score_settings.R")
 my_scrap <- readRDS("weekly_scrap.rds")
@@ -58,7 +58,7 @@ plotProjections <- function(.proj, .pos, .title, .subtitle) {
       geom_text(aes(x=reorder(pos_rank,desc(pos_rank)), 
                 y=r_pos, 
                 color=tier, 
-                label=last_name), nudge_y = nu_y, nudge_x = 0.1, size=2.5) +
+                label=full_name), nudge_y = nu_y, nudge_x = 0.1, size=2.3) +
       theme_classic() + xlab("Rank") + ylab("Points") +
       theme( panel.grid.major.x=element_line(colour="#EEEEEE"),
          legend.position="none" ) +
@@ -68,7 +68,7 @@ plotProjections <- function(.proj, .pos, .title, .subtitle) {
   
 }
 
-plotProjections(my_projections, "QB", "Quaterbacks", "week 5")
+plotProjections(my_projections, "QB", "Quaterbacks", "week 6")
 
 ```
 
@@ -77,7 +77,7 @@ WR
 
 ```{r wr}
 
-plotProjections(my_projections, "WR", "Wide Receivers", "week 5")
+plotProjections(my_projections, "WR", "Wide Receivers", "week 6")
 
 ```
 
@@ -86,7 +86,7 @@ RB
 
 ```{r rb}
 
-plotProjections(my_projections, "RB", "Running Backs", "week 5")
+plotProjections(my_projections, "RB", "Running Backs", "week 6")
 
 ```
 
@@ -95,16 +95,27 @@ TE
 
 ```{r te}
 
-plotProjections(my_projections, "TE", "Tight Ends", "week 5")
+plotProjections(my_projections, "TE", "Tight Ends", "week 6")
 
 ```
+
+
+K
+========================
+
+```{r k}
+
+plotProjections(my_projections, "K", "Kickers", "week 6")
+
+```
+
 
 DEF
 ========================
 
 ```{r def}
 
-plotProjections(my_projections, "DST", "Defenses", "week 5")
+plotProjections(my_projections, "DST", "Defenses", "week 6")
 
 ```
 

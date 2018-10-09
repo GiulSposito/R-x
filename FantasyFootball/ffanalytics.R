@@ -1,19 +1,20 @@
 library(ffanalytics)
 source("FantasyFootball/score_settings.R")
 
-my_scrap <- scrape_data(src = c("CBS", "Yahoo", "ESPN", "NFL", "FFToday",
-                                "NumberFire", "FantasyPros", "FantasySharks",
-                                "FantasyFootballNerd", "FleaFlicker"), 
-                        pos = c("QB", "RB", "WR", "TE", "DST"),
+# src = c("CBS", "Yahoo", "ESPN", "NFL", "FFToday",
+#         "NumberFire", "FantasyPros", "FantasySharks",
+#         "FantasyFootballNerd", "FleaFlicker"), 
+
+my_scrap <- scrape_data(pos = c("QB", "RB", "WR", "TE", "DST", "K"),
                         season = 2018, 
-                        week = 5)
+                        week = 6)
 
 
 my_scrap %>% 
   saveRDS("./FantasyFootball/weekly_scrap.rds")
 
-projections_table(my_scrap, scoring_rules = dudes.score.settings) %>% 
-  saveRDS("./FantasyFootball/my_projects.rds")
+my_projections <- projections_table(my_scrap, scoring_rules = dudes.score.settings) 
+  #%>% saveRDS("./FantasyFootball/my_projects.rds")
 
 my_stats <- ffanalytics::aggregate_stats(my_scrap)
 
