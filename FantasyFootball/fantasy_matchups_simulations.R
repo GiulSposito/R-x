@@ -57,16 +57,17 @@ matchups.rosters <- matchup.teams.json %>%
     tibble(
       home.teamId = matchup$homeTeam$id,
       home.name   = matchup$homeTeam$name,
-      nome.logo   = matchup$homeTeam$logoUrl,
+      home.logo   = matchup$homeTeam$logoUrl,
+      home.pts    = matchup$homeTeam$pts,
       home.roster = list(extractTeam(matchup$homeTeam)),
       away.teamId = matchup$awayTeam$id,
       away.name   = matchup$awayTeam$name,
       away.logo   = matchup$awayTeam$logoUrl,
+      away.pts    = matchup$awayTeam$pts,
       away.roster = list(extractTeam(matchup$awayTeam))
     ) %>% 
       return()
   }) %>% bind_rows()
-
 
 ### scrap e pontuacao
 
