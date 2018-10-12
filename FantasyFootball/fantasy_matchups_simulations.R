@@ -10,10 +10,10 @@ leagueId <- config$leagueId
 authToken <- config$authToken
 
 # contexto da semana
-week <- 5
+week <- 6
 
 # obtem os matchups
-url.matchups <- "http://api.fantasy.nfl.com/v1/league/matchups?leagueId={leagueId}&week={week}&authToken={authToken}&format=json"
+url.matchups <- "http://api.fantasy.nfl.com/v1/league/matchups?leagueId={leagueId}&week={week}&format=json&authToken={authToken}"
 
 # faz a chamada na api
 httr::GET(glue(url.matchups)) -> resp
@@ -178,7 +178,8 @@ matchups.rosters.proj %>%
     home.win = map2(home.sim, away.sim, function(h.scr, a.scr) (h.scr > a.scr)),
     away.win = map(home.win, function(.x) !.x),
     home.win.prob = map(home.win, function(.x) mean(.x) ),
-    away.win.prob = map(away.win, function(.x) mean(.x))
+    away.win.prob = map(away.win, function(.x) mean(.x)),
+    score.diff = map2(home.sim, away.sim, function(h.scr, a.scr) (h.scr - a.scr))
   )  %>%  
   mutate(
     home.points = map(home.sim, summaryAsTibble),
@@ -186,4 +187,4 @@ matchups.rosters.proj %>%
   ) -> matchups.simulation
 
 # salva dados da simulacao
-saveRDS(matchups.simulation, "./FantasyFootball/week5_simulation.rds")
+saveRDS(matchups.simulation, "./FantasyFootball/week6_simulation.rds")

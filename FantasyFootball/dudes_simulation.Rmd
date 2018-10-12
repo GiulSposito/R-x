@@ -1,5 +1,5 @@
 ---
-title: "Dudes Football League - Week 5 - Simulation"
+title: "Dudes Football League - Week 6 - Simulation"
 output: 
   flexdashboard::flex_dashboard:
     orientation: rows
@@ -12,7 +12,7 @@ library(tidyverse)
 library(plotly)
 library(formattable)
 
-sim <- readRDS("week5_simulation.rds") 
+sim <- readRDS("week6_simulation.rds") 
 
 sim.summary <- tibble(
   team.id   = c(sim$home.teamId,   sim$away.teamId),
@@ -116,6 +116,25 @@ sim.summary %>%
 
 ```
 
+
+Score Difference {data-navmenu="Overview"}
+============================================
+
+```{r fig.width=8}
+
+sim %>% 
+  mutate(game=paste0(away.name, " @ ", home.name)) %>% 
+  select(game, score.diff) %>% 
+  unnest() %>% 
+  ggplot(aes(fill=game)) +
+  geom_density(aes(score.diff), alpha=.6) +
+  facet_grid(rows=vars(game), switch = "x") +
+  theme_minimal() +
+  theme( legend.position = "right" )
+
+```
+
+
 Points Table {data-navmenu="Overview"}
 ============================================
 
@@ -133,6 +152,9 @@ sim.summary %>%
 ```
 
 
+
+
+<!--
 
 
 Roster Comparation  {data-orientation=columns}
@@ -156,3 +178,5 @@ Column
 ```{r}
 
 ```
+
+-->
