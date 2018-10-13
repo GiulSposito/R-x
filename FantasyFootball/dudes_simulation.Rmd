@@ -188,14 +188,24 @@ plotRoster <- function(.team_table, .slotLevels=slotLevels, .posLevels=posLevels
       rosterSlot = factor(rosterSlot, levels=slotLevels),
       points.range = map(points.range, summaryAsTibble)
     ) %>% 
+    mutate(
+      points = case_when(
+        (points <= 0) ~ as.numeric(NA),
+        (points >  0) ~ points 
+      )
+    ) %>% 
     unnest(points.range) %>% 
     arrange(rosterSlot, position) %>% 
     mutate(display.order=1:nrow(.)) %>% 
-    ggplot() +
-    geom_pointrange(aes(x=reorder(paste0(name," [", rosterSlot,"]"), -display.order), y=Mean, ymin=Min., ymax=Max., color=position)) +
+    ggplot(aes(x=reorder(paste0(name," [", rosterSlot,"]"), -display.order), color=position)) +
+    geom_pointrange(aes(y=Mean, ymin=Min., ymax=Max.)) +
+    geom_point(aes(y=points), size=2, color="black") +
+    geom_label(aes(y=Mean, label=round(Mean,1)), size = 3,
+               label.padding = unit(0.15, "lines"), show.legend = F) +
     xlab("") +
     coord_flip() +
-    theme_minimal()
+    theme_minimal() +
+    theme(legend.position = "bottom")
 }
 
 sim %>%
@@ -220,7 +230,6 @@ for(i in 1:nrow(matchups)){
   cat("\n")
 }
 
-# matchups[4,]$away.roster -> .team_table
 
 
 
