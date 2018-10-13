@@ -48,7 +48,8 @@ extractTeam <- . %>%
   select( src_id=id, name, position, rosterSlot, fantasyPts ) %>%
   jsonlite::flatten() %>% 
   select(-fantasyPts.week.season, -fantasyPts.week.week ) %>% 
-  rename(points = fantasyPts.week.pts)
+  rename(points = fantasyPts.week.pts) %>% 
+  mutate(points = as.numeric(points) )
 
 # precessa o json de retorno
 matchups.rosters <- matchup.teams.json %>% 
@@ -58,12 +59,12 @@ matchups.rosters <- matchup.teams.json %>%
       home.teamId = matchup$homeTeam$id,
       home.name   = matchup$homeTeam$name,
       home.logo   = matchup$homeTeam$logoUrl,
-      home.pts    = matchup$homeTeam$pts,
+      home.pts    = as.numeric(matchup$homeTeam$pts),
       home.roster = list(extractTeam(matchup$homeTeam)),
       away.teamId = matchup$awayTeam$id,
       away.name   = matchup$awayTeam$name,
       away.logo   = matchup$awayTeam$logoUrl,
-      away.pts    = matchup$awayTeam$pts,
+      away.pts    = as.numeric(matchup$awayTeam$pts),
       away.roster = list(extractTeam(matchup$awayTeam))
     ) %>% 
       return()
@@ -158,10 +159,38 @@ simPoints <- function(team_table){
     return()
 }
 
+# sorteia uma das pontuacoes projetadas mas leva em conta
+# se o jogador já jogou
+simPointsCurrent <- function(team_table){
+  # time escalado
+  team_table %>% 
+    filter( rosterSlot != "BN" ) -> team.sloted
+  
+  # para jogadores que que ainda nao jogaram
+  # simula pontuacao
+  team.sloted %>% 
+    filter(points==0) %>% 
+    pull(points.range) %>% 
+    map(function(pt.rng){
+      i <- sample(1:nrow(pt.rng),1)
+      return(pt.rng[i,]$points)
+    }) %>% 
+    unlist() %>% 
+    sum(na.rm = T) -> sim.points
+  
+  # para jogadore aque já jogaram
+  team.sloted %>% 
+    filter(points>0) %>% 
+    pull(points) %>% 
+    sum(na.rm = T) -> fantasy.points
+  
+  return(sim.points + fantasy.points)
+}
+
 # repete o sorteio .n vezes
-repSimulation <- function(.team, .n){
+repSimulation <- function(.team, .n, .simType){
   sims <- vector("numeric",.n)
-  for(i in 1:.n) sims[i] <- simPoints(.team)
+  for(i in 1:.n) sims[i] <- .simType(.team)
   return(sims)
 }
 
@@ -174,13 +203,16 @@ summaryAsTibble <- . %>% summary() %>% as.list() %>% as.tibble()
 # incorpora a simulacao e calcula resultados
 matchups.rosters.proj %>% 
   mutate(
-    home.sim = map(home.roster, repSimulation, .n=n.sim),
-    away.sim = map(away.roster, repSimulation, .n=n.sim),
+    home.sim = map(home.roster, repSimulation, .n=n.sim, .simType=simPointsCurrent),
+    away.sim = map(away.roster, repSimulation, .n=n.sim, .simType=simPointsCurrent),
+    home.sim.org = map(home.roster, repSimulation, .n=n.sim, .simType=simPoints),
+    away.sim.org = map(away.roster, repSimulation, .n=n.sim, .simType=simPoints),
     home.win = map2(home.sim, away.sim, function(h.scr, a.scr) (h.scr > a.scr)),
     away.win = map(home.win, function(.x) !.x),
-    home.win.prob = map(home.win, function(.x) mean(.x) ),
-    away.win.prob = map(away.win, function(.x) mean(.x)),
-    score.diff = map2(home.sim, away.sim, function(h.scr, a.scr) (h.scr - a.scr))
+    home.win.prob = map_dbl(home.win, function(.x) mean(.x)),
+    away.win.prob = map_dbl(away.win, function(.x) mean(.x)),
+    score.diff = map2(home.sim, away.sim, function(h.scr, a.scr) (h.scr - a.scr)),
+    score.diff.org = map2(home.sim.org, away.sim.org, function(h.scr, a.scr) (h.scr - a.scr))
   )  %>%  
   mutate(
     home.points = map(home.sim, summaryAsTibble),
