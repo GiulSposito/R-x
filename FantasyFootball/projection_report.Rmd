@@ -14,7 +14,7 @@ library(ffanalytics)
 ```{r loaddata, cache=FALSE}
 
 source("score_settings.R")
-my_scrap <- readRDS("weekly_scrap.rds")
+my_scrap <- readRDS("week6_scrap.rds")
 
 my_projections <- projections_table(my_scrap, scoring_rules = dudes.score.settings) %>% 
   filter(avg_type=="weighted") %>% 
