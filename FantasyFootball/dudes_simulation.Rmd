@@ -20,7 +20,7 @@ sim.summary <- tibble(
   pts.summ  = c(sim$home.points,   sim$away.points),
   points    = c(sim$home.sim,      sim$away.sim),
   win.pc    = c(sim$home.win.prob, sim$away.win.prob)
-) %>% unnest(win.pc) #bug
+) #bug %>% unnest(win.pc)
 
 
 winGauge <- function(.teamId, .teamSummary) {
@@ -88,18 +88,27 @@ Week Matchups {data-navmenu="Overview"}
 
 ```{r}
 sim %>%
-  unnest(home.win.prob, away.win.prob) %>% 
+  # unnest(home.win.prob, away.win.prob) %>% 
   unnest(home.points, away.points, .sep = ".") %>% 
-  rename(home.points = home.points.Median,
-         away.points = away.points.Median) %>% 
   mutate( home.win.prob = round(home.win.prob,2),
           away.win.prob = round(away.win.prob,2),
-          home.points   = round(home.points,1),
-          away.points   = round(away.points,1)) %>% 
-  select(home.name, home.win.prob, home.points, away.points, away.win.prob, away.name) %>% 
+          home.pts.proj   = round(home.points.Median,1),
+          away.pts.proj   = round(away.points.Median,1),
+          home.pts        = round(as.numeric(home.pts),1),
+          away.pts        = round(as.numeric(away.pts),1)) %>% 
+  select(
+    away.name,
+    away.win.prob,
+    away.pts.proj,
+    away.pts,
+    home.pts,
+    home.pts.proj,
+    home.win.prob,
+    home.name
+  ) %>% 
   formattable(list(
     area(col=c(home.win.prob, away.win.prob)) ~ color_tile("pink","lightgreen"),
-    area(col=c(home.points, away.points)) ~ normalize_bar("palegoldenrod", 0.2)
+    area(col=c(home.pts.proj, away.pts.proj)) ~ normalize_bar("palegoldenrod", 0.2)
   ))
 ```
 
@@ -124,10 +133,14 @@ Score Difference {data-navmenu="Overview"}
 
 sim %>% 
   mutate(game=paste0(away.name, " @ ", home.name)) %>% 
-  select(game, score.diff) %>% 
+  select(game, score.diff, score.diff.org, home.pts, away.pts) %>%
+  mutate(current.score.diff = home.pts-away.pts) %>% 
   unnest() %>% 
   ggplot(aes(fill=game)) +
+  geom_density(aes(score.diff.org), fill="grey", color=NA, alpha=.2) +
   geom_density(aes(score.diff), alpha=.6) +
+  geom_vline(aes(xintercept=current.score.diff),
+             linetype=2, color="black") +
   facet_grid(rows=vars(game), switch = "x") +
   theme_minimal() +
   theme( legend.position = "right" )
