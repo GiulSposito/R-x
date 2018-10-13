@@ -175,17 +175,24 @@ plotRoster <- function(.team_table, .slotLevels=slotLevels, .posLevels=posLevels
   
   if (class(.team_table)=="list") .team_table <- .team_table[[1]]
   
+  # retorna um summary como um data.frame
+  summaryAsTibble <- . %>% 
+    pull(points) %>% 
+    summary() %>% 
+    as.list() %>% 
+    as.tibble()
+  
   .team_table %>% 
     mutate(
       position = factor(position, levels=posLevels),
-      rosterSlot = factor(rosterSlot, levels=slotLevels)
+      rosterSlot = factor(rosterSlot, levels=slotLevels),
+      points.range = map(points.range, summaryAsTibble)
     ) %>% 
     unnest(points.range) %>% 
-    rename(pts.proj = points1) %>% 
     arrange(rosterSlot, position) %>% 
     mutate(display.order=1:nrow(.)) %>% 
     ggplot() +
-    geom_boxplot(aes(x=reorder(paste0(name," [", rosterSlot,"]"), -display.order), y=pts.proj, color=position)) +
+    geom_pointrange(aes(x=reorder(paste0(name," [", rosterSlot,"]"), -display.order), y=Mean, ymin=Min., ymax=Max., color=position)) +
     xlab("") +
     coord_flip() +
     theme_minimal()
