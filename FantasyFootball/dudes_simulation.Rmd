@@ -180,9 +180,15 @@ plotRoster <- function(.team_table, .slotLevels=slotLevels, .posLevels=posLevels
       position = factor(position, levels=posLevels),
       rosterSlot = factor(rosterSlot, levels=slotLevels)
     ) %>% 
+    unnest(points.range) %>% 
+    rename(pts.proj = points1) %>% 
     arrange(rosterSlot, position) %>% 
-    pull(name) %>% 
-    return()
+    mutate(display.order=1:nrow(.)) %>% 
+    ggplot() +
+    geom_boxplot(aes(x=reorder(paste0(name," [", rosterSlot,"]"), -display.order), y=pts.proj, color=position)) +
+    xlab("") +
+    coord_flip() +
+    theme_minimal()
 }
 
 sim %>%
@@ -195,15 +201,15 @@ for(i in 1:nrow(matchups)){
 
   cat(paste0("\n",matchup$game," {data-navmenu=\"Roster Comparation\"  data-orientation=columns}\n"))
   cat("============================================\n")
-
+  
   cat("\nColumn\n--------------------------------------------\n")
   cat(paste0("\n### ", matchup$away.name), "\n\n")
-  cat(plotRoster(matchup$away.roster))
+  print(plotRoster(matchup$away.roster))
   cat("\n")
   
   cat("\nColumn\n--------------------------------------------\n")
   cat(paste0("\n### ", matchup$home.name), "\n\n")
-  cat(plotRoster(matchup$home.roster))
+  print(plotRoster(matchup$home.roster))
   cat("\n")
 }
 
