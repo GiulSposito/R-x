@@ -166,30 +166,50 @@ sim.summary %>%
 
 
 
+```{r results='asis'}
 
-<!--
+slotLevels <- gl(8,1,labels=c("QB","RB","WR","TE","W/R","K","DEF","BN"))
+posLevels <- gl(6,1,labels=c("QB","RB","WR","TE","K","DEF"))
+
+plotRoster <- function(.team_table, .slotLevels=slotLevels, .posLevels=posLevels){
+  
+  if (class(.team_table)=="list") .team_table <- .team_table[[1]]
+  
+  .team_table %>% 
+    mutate(
+      position = factor(position, levels=posLevels),
+      rosterSlot = factor(rosterSlot, levels=slotLevels)
+    ) %>% 
+    arrange(rosterSlot, position) %>% 
+    pull(name) %>% 
+    return()
+}
+
+sim %>%
+  mutate( away.nickname = gsub("([a-zA-Z\']+ )?", "", away.name),
+          home.nickname = gsub("([a-zA-Z\']+ )?", "", home.name)) %>% 
+  mutate( game = paste0(away.nickname, " @ ", home.nickname)) -> matchups
+
+for(i in 1:nrow(matchups)){
+  matchup <- matchups[i,]
+
+  cat(paste0("\n",matchup$game," {data-navmenu=\"Roster Comparation\"  data-orientation=columns}\n"))
+  cat("============================================\n")
+
+  cat("\nColumn\n--------------------------------------------\n")
+  cat(paste0("\n### ", matchup$away.name), "\n\n")
+  cat(plotRoster(matchup$away.roster))
+  cat("\n")
+  
+  cat("\nColumn\n--------------------------------------------\n")
+  cat(paste0("\n### ", matchup$home.name), "\n\n")
+  cat(plotRoster(matchup$home.roster))
+  cat("\n")
+}
+
+# matchups[4,]$away.roster -> .team_table
 
 
-Roster Comparation  {data-orientation=columns}
-================
 
-
-Column
------------------------------------------------------------------------
-
-### Chart A
-
-```{r}
 
 ```
-
-Column
------------------------------------------------------------------------
-
-### Chart B
-
-```{r}
-
-```
-
--->
