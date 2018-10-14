@@ -198,11 +198,12 @@ plotRoster <- function(.team_table, .slotLevels=slotLevels, .posLevels=posLevels
     arrange(rosterSlot, position) %>% 
     mutate(display.order=1:nrow(.)) %>% 
     ggplot(aes(x=reorder(paste0(name," [", rosterSlot,"]"), -display.order), color=position)) +
-    geom_pointrange(aes(y=Mean, ymin=Min., ymax=Max.)) +
-    geom_point(aes(y=points), size=2, color="black") +
-    geom_label(aes(y=Mean, label=round(Mean,1)), size = 3,
+    geom_pointrange(aes(y=Median, ymin=Min., ymax=Max.)) +
+    geom_label(aes(y=Median, label=round(Median,1)), size = 3,
                label.padding = unit(0.15, "lines"), show.legend = F) +
+    geom_point(aes(y=points), size=2, color="black") +
     xlab("") +
+    ylab("Fantasy Points") +
     coord_flip() +
     theme_minimal() +
     theme(legend.position = "bottom")

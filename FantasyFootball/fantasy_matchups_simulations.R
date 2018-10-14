@@ -78,7 +78,7 @@ source("FantasyFootball/score_settings.R")
 # scrap todas as fontes, nas posicoes da liga
 scrap <- scrape_data(pos = c("QB", "RB", "WR", "TE", "K", "DST"),
                      season = 2018, 
-                     week = 5)
+                     week = week)
 
 saveRDS(scrap, "./FantasyFootball/week6_scrap.rds")
 
@@ -127,8 +127,10 @@ addProjPoints <- function(.roster, .id_map, .pts_proj){
     select(id, src_id, team ) %>% 
     inner_join(.roster, by="src_id") %>% 
     inner_join(.pts_proj, by = "id") %>% 
-    select(-pos,-src_id)
+    select(-pos,-src_id) %>% 
+    return()
 }
+
 
 # coloca os pontos de projecao junto aos times dos rosters
 matchups.rosters.proj <- matchups.rosters %>% 
@@ -201,6 +203,7 @@ n.sim <- 2000
 summaryAsTibble <- . %>% summary() %>% as.list() %>% as.tibble()
 
 # incorpora a simulacao e calcula resultados
+set.seed(1975)
 matchups.rosters.proj %>% 
   mutate(
     home.sim = map(home.roster, repSimulation, .n=n.sim, .simType=simPointsCurrent),
