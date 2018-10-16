@@ -10,7 +10,7 @@ leagueId <- config$leagueId
 authToken <- config$authToken
 
 # contexto da semana
-week <- 6
+week <- 7
 
 # obtem os matchups
 url.matchups <- "http://api.fantasy.nfl.com/v1/league/matchups?leagueId={leagueId}&week={week}&format=json&authToken={authToken}"
@@ -39,7 +39,7 @@ matchup.teams.json <- matchups$awayTeam.id %>%
   },
   .url=url.team.matchup)
 
-saveRDS(matchup.teams.json, "./FantasyFootball/week6_matchups_json.rds")
+saveRDS(matchup.teams.json, "./FantasyFootball/week7_matchups_json.rds")
 
 # funcao para extrar dados dos hosters dos times
 extractTeam <- . %>% 
@@ -75,12 +75,14 @@ matchups.rosters <- matchup.teams.json %>%
 library(ffanalytics)
 source("FantasyFootball/score_settings.R")
 
-# scrap todas as fontes, nas posicoes da liga
+# # scrap todas as fontes, nas posicoes da liga
 scrap <- scrape_data(pos = c("QB", "RB", "WR", "TE", "K", "DST"),
-                     season = 2018, 
+                     season = 2018,
                      week = week)
 
-saveRDS(scrap, "./FantasyFootball/week6_scrap.rds")
+saveRDS(scrap, "./FantasyFootball/week7_scrap.rds")
+
+scrap <- readRDS("./FantasyFootball/week7_scrap.rds")
 
 # extrai o mapeamento ID do Fantasy versus ID da projecao
 scrap %>%
@@ -223,4 +225,4 @@ matchups.rosters.proj %>%
   ) -> matchups.simulation
 
 # salva dados da simulacao
-saveRDS(matchups.simulation, "./FantasyFootball/week6_simulation.rds")
+saveRDS(matchups.simulation, "./FantasyFootball/week7_simulation.rds")

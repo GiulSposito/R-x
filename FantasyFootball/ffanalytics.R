@@ -11,7 +11,7 @@ my_scrap <- scrape_data(pos = c("QB", "RB", "WR", "TE", "DST", "K"),
 
 
 my_scrap %>% 
-  saveRDS("./FantasyFootball/weekly_scrap.rds")
+  saveRDS("./FantasyFootball/week7_scrap.rds")
 
 my_projections <- projections_table(my_scrap, scoring_rules = dudes.score.settings) 
   #%>% saveRDS("./FantasyFootball/my_projects.rds")
