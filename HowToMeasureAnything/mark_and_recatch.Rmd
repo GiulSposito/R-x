@@ -1,0 +1,69 @@
+---
+title: "How many fishes are in the lake? Mark & recatch!"
+output: html_notebook
+---
+
+The problem: how we estimate the size of a fish population in a lake? Obviously without catch all fishes or drain the entire like to find out. Mark and recapture is a method commonly used in ecology to estimate an animal population's size. In this post we simulate the "mark and recatch" technique to assess a population sizes through sampling.
+
+<!--more--> 
+
+**Mark and recapture** is a method commonly used in ecology to estimate an animal population's size. A portion of the population is captured, marked, and released. Later, another portion is captured and the number of marked individuals within the sample is counted. Since the number of marked individuals within the second sample should be proportional to the number of marked individuals in the whole population, an estimate of the total population size can be obtained by dividing the number of marked individuals by the proportion of marked individuals in the second sample. The method is most useful when it is not practical to count all the individuals in the population. [^1]
+
+## Simulation
+
+We'll simulate a cenario with a previously population known where we can use this technique to assess the quality of the information obtained. So, let's create a population and a "lake" (the "fishes vector") to be sampled.
+
+```{r setupLake}
+
+# generating a fish population between 10k and 20k 
+population <- round(runif(1, min=10000, max=50000)) # 'unknown population'
+fishes     <- vector(length = population)
+
+```
+
+Now we do the first catch and mark, we sample the lake population and mark the fishes.
+
+```{r mark}
+
+# sample and mark
+marked_fishes <- 1000
+fishes[sample(1:population, marked_fishes, replace=F)] <- T
+
+```
+
+Now we resample the lake and check how many marked fishes we'll get.
+
+```{r recatch}
+
+# recatch the fishs
+sample_size <- 1000
+recatch <- fishes[sample(1:population, sample_size, replace=F)]
+
+# check how many fishes are marked fishes
+marked_sample <- sum(recatch)
+marked_sample
+  
+```
+
+We recatch `r marked_sample` maked fishs in a sample of `r sample_size`, so we now know that the proportion of marked fishes in the tank are `r round(marked_sample/sample_size,3)`. Knowing that are 1000 marked fishes represents `r round(marked_sample/sample_size,3)` of a total population we can now to estimate the population size.
+
+```{r popEst}
+
+# population estimative
+marked_proportion <- marked_sample/sample_size
+population_est <- marked_fishes/marked_proportion
+round(population_est)
+
+```
+And compare with the real value:
+
+```{r compare}
+
+population
+
+```
+
+
+## References
+
+[^1]: [Wikipedia - Mark and Capture](https://en.wikipedia.org/wiki/Mark_and_recapture)
