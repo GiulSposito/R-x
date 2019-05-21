@@ -15,6 +15,7 @@ dir("./GasPrices/data",pattern = ".*zip", full.names = T) %>%
       mutate_at(vars(valor_compra, valor_venda), as.numeric) %>%
       mutate_at(vars(instalacao), as.integer) %>%
       mutate( data = dmy(data) ) %>% 
+      filter( !is.na(data) ) %>% # alguns registros estao fora do formato
       return()
   }) -> prices
 
