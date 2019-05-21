@@ -1,6 +1,8 @@
 ---
-title: "How many fishes are in the lake? Mark & recatch!"
-output: html_notebook
+title: "How many fishes are in the lake?"
+output:
+  html_document:
+    df_print: paged
 ---
 
 The problem: how we estimate the size of a fish population in a lake? Obviously without catch all fishes or drain the entire like to find out. Mark and recapture is a method commonly used in ecology to estimate an animal population's size. In this post we simulate the "mark and recatch" technique to assess a population sizes through sampling.
@@ -15,7 +17,11 @@ We'll simulate a cenario with a previously population known where we can use thi
 
 ```{r setupLake}
 
-# generating a fish population between 10k and 20k 
+# libraries
+library(dplyr)
+
+# generating a fish population between 10k and 50k 
+set.seed(1975)
 population <- round(runif(1, min=10000, max=50000)) # 'unknown population'
 fishes     <- vector(length = population)
 
@@ -45,7 +51,7 @@ marked_sample
   
 ```
 
-We recatch `r marked_sample` maked fishs in a sample of `r sample_size`, so we now know that the proportion of marked fishes in the tank are `r round(marked_sample/sample_size,3)`. Knowing that are 1000 marked fishes represents `r round(marked_sample/sample_size,3)` of a total population we can now to estimate the population size.
+We recatch `r marked_sample` maked fishs in a sample of `r sample_size`, so we now know that the proportion of marked fishes in the tank are `r round(marked_sample/sample_size,3)`. Knowing that are 1000 marked fishes represents `r round(100*marked_sample/sample_size,1)`% of a total population we can now to estimate the population size.
 
 ```{r popEst}
 
@@ -59,7 +65,64 @@ And compare with the real value:
 
 ```{r compare}
 
+# what is the real population
 population
+
+# checking for the error 
+abs(population_est-population)/population
+
+```
+
+The number are got was `r as.integer(round(population_est))` against a real value of `r as.integer(population)`, we error the population by `r round(100*abs(population_est-population)/population,1)`%. 
+
+## Simulations and Experiments
+
+Before going to the math (this is basically a well know binary distribution case) let's go some experiment. The size of the samples (the "mark catch" and the "recatch and count") alters the precision of the information? Do several fewer catchs is better than a large catch?
+
+### More fewer catchs is better than a large catch?
+
+Let's see if an strategy of recatch the same number of fishes (`r sample_size`) but in several fewer catchs is better than a unique recatch.
+
+```{r recatchSize}
+
+# sizes recatch samples of the experiments
+recatch_sizes <- c(100,200,250,500,1000)
+
+# for each recatch size we make the sampling and mean
+results <- lapply(recatch_sizes, function(rs){
+  
+  # setup the lake and marked fishes
+  fishes     <- vector(length = population)
+  fishes[sample(1:population, marked_fishes, replace=F)] <- T
+  
+  # how many times we do a recatch
+  repetitions <- sample_size/rs
+  sampling_result <- vector(mode = "integer", length = repetitions)
+  
+  for(i in 1:10){
+    
+    # recatch the fishs
+    recatch <- fishes[sample(1:population, rs, replace=F)]
+    # check how many fishes are marked fishes
+    marked_sample <- sum(recatch)
+    # estimate the population
+    marked_proportion  <- marked_sample/sample_size
+    sampling_result[i] <- round(marked_fishes/marked_proportion)
+
+  }
+  
+  # return the mean value
+  return(data.frame(
+    repetitions = repetitions,
+    sample_size = rs,
+    pop_est_mean = mean(sampling_result),
+    pop_est_sd   = sd(sampling_result)
+  ))
+  
+})
+
+bind_rows(results)
+print(population)
 
 ```
 
